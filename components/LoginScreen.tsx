@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  Shield, Users, Monitor, Truck, 
-  Activity, RadioTower, Globe, 
+  Plane, Shield, Users, Monitor, Truck, 
+  Activity, RadioTower, Globe, Briefcase, 
   ChevronRight, ArrowLeft, HeartHandshake, Smile, Map, Check
 } from 'lucide-react';
 import { UserRole, Department, Terminal } from '../types';
@@ -27,8 +27,8 @@ const DEPT_GROUPS = [
   {
     id: 'AOCC_CORE',
     title: 'AOCC Command',
-    subtitle: 'Master Control',
-    description: 'Reads ALL Terminal Data (T1 + T2).',
+    subtitle: 'Admins & IT Systems',
+    description: 'Central brain. Reads all terminal data.',
     icon: <RadioTower className="w-8 h-8 md:w-10 md:h-10 text-indigo-200" />,
     color: 'indigo',
     allowedTerminals: [Terminal.T1, Terminal.T2],
@@ -39,9 +39,9 @@ const DEPT_GROUPS = [
   },
   {
     id: 'DOMESTIC_OPS',
-    title: 'Domestic Terminal Ops',
+    title: 'Domestic Ops (T1)',
     subtitle: 'Terminal 1 Only',
-    description: 'Restricted View: Domestic flights & pax data only.',
+    description: 'Local flights and passenger handling.',
     icon: <Map className="w-8 h-8 md:w-10 md:h-10 text-emerald-200" />,
     color: 'emerald',
     allowedTerminals: [Terminal.T1],
@@ -49,9 +49,9 @@ const DEPT_GROUPS = [
   },
   {
     id: 'INTL_OPS',
-    title: 'International Terminal Ops',
+    title: 'International Ops (T2)',
     subtitle: 'Terminal 2 Only',
-    description: 'Restricted View: International flights & pax data only.',
+    description: 'Global flights, Customs, Immigration.',
     icon: <Globe className="w-8 h-8 md:w-10 md:h-10 text-amber-200" />,
     color: 'amber',
     allowedTerminals: [Terminal.T2],
@@ -161,7 +161,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
                           <div>
                               <h3 className="text-lg font-bold text-white">{group.title}</h3>
                               <p className="text-xs text-slate-300 opacity-80">{group.subtitle}</p>
-                              <p className="text-[10px] text-slate-400 mt-1">{group.description}</p>
                           </div>
                         </div>
                         <ChevronRight className="text-slate-500 group-hover:text-white transition-colors" />
@@ -205,3 +204,47 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
                    <h2 className="text-lg font-bold text-white">Finalize Profile</h2>
                    <p className="text-sm text-slate-400">Complete authentication</p>
                 </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Rank / Job Title</label>
+                    <input 
+                        type="text"
+                        placeholder="e.g. Operations Supervisor"
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value)}
+                        required
+                        autoFocus
+                        className="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Confirm Display Name</label>
+                    <input 
+                      type="text"
+                      placeholder="e.g. Capt. Reyes"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <button 
+                  type="submit"
+                  className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                  <Check className="w-5 h-5" />
+                  COMPLETE SETUP
+                </button>
+              </form>
+            )}
+
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
