@@ -1,7 +1,9 @@
+
 import React, { useState } from 'react';
-import { LogOut, Plane, RadioTower, Menu, X, User, Search, AlertTriangle, Lock } from 'lucide-react';
+import { LogOut, Plane, RadioTower, Menu, X, User, Search, AlertTriangle, Lock, Users } from 'lucide-react';
 import { UserProfile, ChatMessage, Terminal } from '../types';
 import { DirectChat } from './DirectChat';
+import { StaffRoster } from './StaffRoster';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -32,7 +34,7 @@ const NofyLogo = () => (
 
 export const Layout: React.FC<LayoutProps> = ({ children, user, currentTerminal, onTerminalChange, onLogout, chatMessages, onSendMessage, mockUsers }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [menuTab, setMenuTab] = useState<'PROFILE' | 'CHAT'>('PROFILE');
+  const [menuTab, setMenuTab] = useState<'PROFILE' | 'CHAT' | 'ROSTER'>('PROFILE');
 
   const canSwitchTerminal = user.allowedTerminals.length > 1;
 
@@ -149,22 +151,28 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, currentTerminal,
                    onClick={() => setMenuTab('PROFILE')}
                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider ${menuTab === 'PROFILE' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
                  >
-                   My Profile
+                   Profile
+                 </button>
+                 <button 
+                   onClick={() => setMenuTab('ROSTER')}
+                   className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider ${menuTab === 'ROSTER' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
+                 >
+                   Team Status
                  </button>
                  <button 
                    onClick={() => setMenuTab('CHAT')}
                    className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider ${menuTab === 'CHAT' ? 'text-indigo-400 border-b-2 border-indigo-400' : 'text-slate-500 hover:text-slate-300'}`}
                  >
-                   Direct Chat
+                   Chat
                  </button>
               </div>
 
               {/* Drawer Body */}
-              <div className="flex-grow overflow-hidden">
+              <div className="flex-grow overflow-hidden bg-slate-900">
                  
                  {/* TAB: PROFILE & DIRECTORY */}
                  {menuTab === 'PROFILE' && (
-                    <div className="h-full overflow-y-auto p-6 space-y-6">
+                    <div className="h-full overflow-y-auto p-6 space-y-6 custom-scrollbar">
                        
                        {/* My Card */}
                        <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 text-center relative overflow-hidden">
@@ -204,12 +212,20 @@ export const Layout: React.FC<LayoutProps> = ({ children, user, currentTerminal,
                                       <div className="text-sm font-bold text-slate-200">{u.name}</div>
                                       <div className="text-[10px] text-slate-500">{u.role} • {u.department.split('_')[0]}</div>
                                    </div>
-                                   <div className={`ml-auto w-2 h-2 rounded-full ${u.status === 'ONLINE' ? 'bg-emerald-500' : 'bg-slate-600'}`}></div>
+                                   <div className={`ml-auto w-2 h-2 rounded-full ${
+                                      u.status === 'ONLINE' ? 'bg-emerald-500' : 
+                                      u.status === 'BUSY' ? 'bg-amber-500' : 'bg-slate-600'
+                                   }`}></div>
                                 </div>
                              ))}
                           </div>
                        </div>
                     </div>
+                 )}
+
+                 {/* TAB: STAFF ROSTER */}
+                 {menuTab === 'ROSTER' && (
+                    <StaffRoster currentUser={user} allUsers={mockUsers} />
                  )}
 
                  {/* TAB: DIRECT CHAT */}
