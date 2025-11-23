@@ -1,5 +1,7 @@
+
+
 import React, { useState } from 'react';
-import { DashboardLayout } from './components/DashboardLayout';
+import { Layout } from './components/Layout';
 import { LoginScreen } from './components/LoginScreen';
 import { AuthScreen } from './components/AuthScreen';
 import { CommandInterface } from './components/CommandInterface';
@@ -208,9 +210,26 @@ const INITIAL_PATIENTS: PatientCase[] = [
 ];
 
 const MOCK_USERS: UserProfile[] = [
-  { id: 'u1', name: 'Ops. Sarah L.', email: 'sarah@mcia.ph', role: 'Terminal Manager', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T1] },
+  // --- AOCC & IT (Viewable by AOCC) ---
   { id: 'u2', name: 'Engr. Mark D.', email: 'mark@mcia.ph', role: 'Systems Admin', department: Department.IT_SYSTEMS, status: 'BUSY', allowedTerminals: [Terminal.T1, Terminal.T2] },
+  { id: 'u_it1', name: 'Dev. Jason', email: 'jason@mcia.ph', role: 'Network Engineer', department: Department.IT_SYSTEMS, status: 'ONLINE', allowedTerminals: [Terminal.T1, Terminal.T2] },
+  { id: 'u_it2', name: 'Tech. Sarah', email: 'sarah.it@mcia.ph', role: 'Field Technician', department: Department.IT_SYSTEMS, status: 'BREAK', allowedTerminals: [Terminal.T1, Terminal.T2] },
+  { id: 'u_it3', name: 'Analyst Kevin', email: 'kevin@mcia.ph', role: 'Cybersecurity', department: Department.IT_SYSTEMS, status: 'OFFLINE', allowedTerminals: [Terminal.T1, Terminal.T2] },
+  { id: 'u_aocc1', name: 'Ops Commander', email: 'cmd@mcia.ph', role: 'Senior Ops Chief', department: Department.AOCC, status: 'ONLINE', allowedTerminals: [Terminal.T1, Terminal.T2] },
+
+  // --- T1 DOMESTIC STAFF (Viewable by T1 Ops) ---
+  { id: 'u1', name: 'Ops. Sarah L.', email: 'sarah@mcia.ph', role: 'Terminal Manager', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T1] },
+  { id: 'u_t1_1', name: 'Staff. Mike', email: 'mike@mcia.ph', role: 'Flow Coordinator', department: Department.TERMINAL_OPS, status: 'BUSY', allowedTerminals: [Terminal.T1] },
+  { id: 'u_t1_2', name: 'Staff. Jenny', email: 'jenny@mcia.ph', role: 'Pax Assistance', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T1] },
+  { id: 'u_t1_3', name: 'Staff. Roberto', email: 'rob@mcia.ph', role: 'Facilities Check', department: Department.TERMINAL_OPS, status: 'BREAK', allowedTerminals: [Terminal.T1] },
+  { id: 'u_t1_4', name: 'Staff. Lisa', email: 'lisa@mcia.ph', role: 'Queue Manager', department: Department.TERMINAL_OPS, status: 'LEAVE', allowedTerminals: [Terminal.T1] },
+
+  // --- T2 INTERNATIONAL STAFF (Viewable by T2 Ops) ---
   { id: 'u3', name: 'Capt. R. Santos', email: 'santos@mcia.ph', role: 'Security Chief', department: Department.SECURITY, status: 'ONLINE', allowedTerminals: [Terminal.T2] },
+  { id: 'u_t2_1', name: 'Ops. Maria', email: 'maria@mcia.ph', role: 'Duty Manager', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T2] },
+  { id: 'u_t2_2', name: 'Officer Ken', email: 'ken@mcia.ph', role: 'Immigration Liaison', department: Department.TERMINAL_OPS, status: 'BUSY', allowedTerminals: [Terminal.T2] },
+  { id: 'u_t2_3', name: 'Staff. Bea', email: 'bea@mcia.ph', role: 'VIP Concierge', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T2] },
+  { id: 'u_t2_4', name: 'Staff. Tom', email: 'tom@mcia.ph', role: 'Baggage Ops', department: Department.TERMINAL_OPS, status: 'OFFLINE', allowedTerminals: [Terminal.T2] },
 ];
 
 // MAPPING 5 BUTTONS
@@ -325,7 +344,7 @@ export default function App() {
   }
 
   return (
-    <DashboardLayout 
+    <Layout 
       user={user} 
       currentTerminal={currentTerminal}
       onTerminalChange={setCurrentTerminal}
@@ -432,6 +451,6 @@ export default function App() {
         </div>
       </div>
 
-    </DashboardLayout>
+    </Layout>
   );
 }

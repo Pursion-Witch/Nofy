@@ -119,7 +119,7 @@ export interface UserProfile {
   role: string;
   department: Department;
   avatarUrl?: string;
-  status: 'ONLINE' | 'BUSY' | 'OFFLINE';
+  status: 'ONLINE' | 'BUSY' | 'OFFLINE' | 'BREAK' | 'LEAVE';
   allowedTerminals: Terminal[];
 }
 
