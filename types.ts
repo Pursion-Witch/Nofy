@@ -25,12 +25,14 @@ export enum Agency {
   PAGASA = 'PAGASA',
   DOH = 'DOH',
   DOTR = 'DOTR',
-  DRRMC = 'DRRMC',
-  CEBU_PORT = 'CEBU_PORT',
-  PNP = 'PNP_AVIATION',
-  BI = 'BUREAU_IMMIGRATION',
-  OTS = 'OTS_SECURITY',
-  BFP = 'BFP'
+  BFP = 'BFP',
+  PNP = 'PNP'
+}
+
+export enum StrategicPillar {
+  CEBU_CONNECTS = 'CEBU_CONNECTS',
+  CEBU_PLUS = 'CEBU_PLUS',
+  BALIK_BAYANI = 'BALIK_BAYANI'
 }
 
 export enum Terminal {
@@ -38,93 +40,32 @@ export enum Terminal {
   T2 = 'T2'
 }
 
-export interface LogEntry {
-  id: string;
-  timestamp: Date;
-  message: string;
-  category: 'INCIDENT' | 'STRATEGIC' | 'PASSENGER' | 'RESOURCE' | 'SYSTEM' | 'OPERATIONAL' | 'CALL_LOG';
-  severity: IncidentSeverity;
-  originDept: Department;
-  targetDept?: Department[]; // Who needs to see this?
-  agenciesInvolved: Agency[];
-  aiAnalysis?: string;
-  terminal?: Terminal;
-}
+export type UserStatus = 'ONLINE' | 'BUSY' | 'AWAY' | 'OFFLINE' | 'BREAK' | 'LEAVE';
 
-export interface ResourceStatus {
-  id: string;
-  type: 'CHECK_IN' | 'CAROUSEL' | 'GATE' | 'PARKING_STAND';
-  status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
-  assignedTo?: string; // e.g., "PR123" or "Cebu Pacific"
-  terminal: Terminal;
-  locationGroup?: string; // e.g. "Island A", "North Wing"
-  queueTimeMin?: number; // For check-in queues
-}
-
-export interface FlightSSR {
-  wchr: number; // Wheelchair
-  meda: number; // Medical Case
-  umnr: number; // Unaccompanied Minor
-  vip: number;
-}
-
-export interface Flight {
-  flightNumber: string;
-  airline: string;
-  type: 'ARRIVAL' | 'DEPARTURE';
-  origin: string;      // Used for Arrivals
-  destination: string; // Used for Departures
-  status: 'ON TIME' | 'DELAYED' | 'CANCELLED' | 'BOARDING' | 'LANDED' | 'CHECK-IN' | 'APPROACHING';
-  gate: string;
-  terminal: Terminal;
-  
-  // Time
-  scheduledTime: string; // "14:30"
-  estimatedTime: string; // "14:45"
-
-  // Capacity & Load
-  paxCount: number;
-  capacity: number; // Total seats
-
-  // Operational Context
-  assignedCounters?: string; // T1
-  assignedIsland?: string; // T2
-  carousel?: string; // For Arrivals
-
-  // Critical Ops Data
-  ssr: FlightSSR; // Special Service Requests
-  criticalIssue?: string; // General alert text
-  reasonCode?: string; // Detailed reason for Delay/Cancel (e.g. "Technical", "Weather")
-}
-
-export interface PatientCase {
-  id: string;
-  flightNumber: string;
-  condition: string; // e.g., "Cardiac", "Wheelchair", "Pregnant"
-  status: 'WAITING_MEDIC' | 'TRANSPORTING' | 'CLEARED';
-}
-
-// Strategic Pillars
-export enum StrategicPillar {
-  CEBU_CONNECTS = 'Cebu Connects',
-  CEBU_PLUS = 'Cebu+',
-  CEB_BALIK = 'CEB-Balik'
-}
-
-// Chat & User System
 export interface UserProfile {
   id: string;
   name: string;
-  email: string; // Added email
+  email: string;
   role: string;
   department: Department;
-  avatarUrl?: string;
-  status: 'ONLINE' | 'BUSY' | 'OFFLINE' | 'BREAK' | 'LEAVE';
+  status: UserStatus | string;
   allowedTerminals: Terminal[];
+}
+
+export interface ChatChannel {
+  id: string;
+  name: string;
+  type: 'DIRECT' | 'GROUP';
+  participants: string[]; // User IDs
+  lastMessage?: string;
+  lastMessageTime?: Date;
+  unreadCount?: number;
+  avatar?: string; // For groups
 }
 
 export interface ChatMessage {
   id: string;
+  channelId: string;
   senderId: string;
   senderName: string;
   content: string;
@@ -132,11 +73,154 @@ export interface ChatMessage {
   isRead: boolean;
 }
 
+export interface LogEntry {
+  id: string;
+  timestamp: Date;
+  message: string;
+  category: 'INCIDENT' | 'PASSENGER' | 'RESOURCE' | 'STRATEGIC' | 'SYSTEM' | 'OPERATIONAL' | 'CALL_LOG';
+  severity: IncidentSeverity;
+  originDept: Department;
+  targetDept: Department[];
+  agenciesInvolved: Agency[];
+  terminal: Terminal;
+  aiAnalysis?: string;
+}
+
+export interface ResourceStatus {
+  id: string;
+  type: 'CHECK_IN' | 'CAROUSEL' | 'GATE' | 'PARKING_STAND';
+  status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE' | 'CLOSED';
+  assignedTo?: string; // Flight Number
+  terminal: Terminal;
+}
+
+export interface SSRObject {
+  wchr: number;
+  meda: number;
+  umnr: number;
+  vip: number;
+}
+
+export interface Flight {
+  flightNumber: string;
+  airline: string;
+  type: 'ARRIVAL' | 'DEPARTURE';
+  origin: string;
+  destination: string;
+  status: 'ON TIME' | 'DELAYED' | 'CANCELLED' | 'LANDED' | 'BOARDING' | 'APPROACHING';
+  gate?: string;
+  carousel?: string; // Arrivals
+  assignedCounters?: string; // Departures Check-in
+  assignedIsland?: string; // Departures Check-in (T2)
+  bagDrop?: string; // Departures Bag Drop
+  paxCount: number;
+  capacity: number;
+  scheduledTime: string;
+  estimatedTime: string;
+  terminal: Terminal;
+  reasonCode?: string;
+  criticalIssue?: string;
+  ssr: SSRObject;
+}
+
+export interface PatientCase {
+  id: string;
+  flightNumber: string;
+  condition: string;
+  status: 'WAITING_MEDIC' | 'TREATED' | 'TRANSPORTED';
+}
+
 export interface Task {
   id: string;
   title: string;
   description: string;
-  dueTime: string; // e.g. "08:30"
-  status: 'PENDING' | 'COMPLETED';
-  type: 'QUEUE_CHECK' | 'HAZARD_CHECK' | 'ROAMING';
+  dueTime: string;
+  status: 'PENDING' | 'COMPLETED' | 'MISSED';
+  type: 'QUEUE_CHECK' | 'HAZARD_CHECK' | 'ROAMING' | 'EQUIPMENT_CHECK';
+}
+
+// MANIFEST TYPES
+export enum PassengerStatus {
+  // DEPARTURE
+  CHECKED_IN = 'CHECKED_IN',
+  BOARDED = 'BOARDED',
+  NO_SHOW = 'NO_SHOW',
+  MISSING = 'MISSING',
+  OFFLOADED = 'OFFLOADED',
+  
+  // ARRIVAL / TRANSFER
+  DEPLANED = 'DEPLANED',
+  AT_BAG_DROP = 'AT_BAG_DROP',
+  TRANSFER_DOMESTIC = 'TRANSFER_DOMESTIC',
+  TRANSFER_INTL = 'TRANSFER_INTL',
+
+  // EMERGENCY / ALERT
+  ATTENTION = 'ATTENTION'
+}
+
+export enum TransferStatus {
+  ARRIVED = 'ARRIVED',
+  DEPLANED = 'DEPLANED',
+  AT_BAG_DROP = 'AT_BAG_DROP',
+  CHECK_THRU_DOM = 'CHECK_THRU_DOM', // Domestic Connection
+  CHECK_THRU_INTL = 'CHECK_THRU_INTL', // International Connection
+  WAITING = 'WAITING',
+  DELAYED = 'DELAYED',
+  MISSING = 'MISSING',
+  ATTENTION = 'ATTENTION'
+}
+
+export interface TransferPassenger {
+  id: string;
+  name: string;
+  pnr: string;
+  identityDoc: string; // Added field
+  originFlight: string;
+  originStatus: string; // Landed, Delayed
+  connectingFlight: string;
+  connectingStatus: string; // On Time, Boarding
+  connectionType: 'INTL-INTL' | 'DOM-DOM' | 'INTL-DOM' | 'DOM-INTL';
+  status: TransferStatus;
+  timeToDepart: number; // Minutes remaining
+  alertDetails?: string;
+}
+
+export enum TravelClass {
+  ECONOMY = 'ECONOMY',
+  BUSINESS = 'BUSINESS',
+  FIRST = 'FIRST'
+}
+
+export interface Passenger {
+  id: string;
+  pnr: string;
+  name: string;
+  seat: string;
+  class: TravelClass;
+  status: PassengerStatus;
+  gender: 'M' | 'F';
+  nationality: string;
+  isVip: boolean;
+  ssrCodes: string[];
+  medicalInfo?: string;
+  baggageCount: number;
+  hasBoarded: boolean;
+  identityDoc: string;
+  // New Fields
+  alertDetails?: string; 
+  connectingFlight?: string;
+}
+
+export interface CrewMember {
+  id: string;
+  name: string;
+  role: 'CAPTAIN' | 'FIRST_OFFICER' | 'PURSER' | 'CABIN_CREW' | 'SECURITY';
+  employeeId: string;
+  isOnboard: boolean;
+}
+
+export interface Manifest {
+  flightNumber: string;
+  passengers: Passenger[];
+  crew: CrewMember[];
 }
