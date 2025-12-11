@@ -1,8 +1,7 @@
 
-
 import React, { useState } from 'react';
-import { Send, Loader2, PackageX, HeartPulse, Clock, PlayCircle, Camera, CheckSquare, AlertTriangle, Users, FileText, ToggleLeft, ToggleRight } from 'lucide-react';
-import { LogEntry, IncidentSeverity, Agency, Department, UserRole, Terminal } from '../types';
+import { Send, Loader2, PackageX, HeartPulse, CheckSquare, AlertTriangle, Users, FileText, ToggleLeft, ToggleRight, Sparkles, Clipboard, Camera } from 'lucide-react';
+import { LogEntry, IncidentSeverity, Department, UserRole, Terminal } from '../types';
 
 interface CommandInterfaceProps {
   role: UserRole;
@@ -18,7 +17,7 @@ const CATEGORIES = [
   { id: 'FACILITIES', label: 'Facilities / Ops', icon: <Users className="w-4 h-4" /> },
   { id: 'MAINTENANCE', label: 'Maintenance', icon: <CheckSquare className="w-4 h-4" /> },
   { id: 'MEDICAL', label: 'Medical Emergency', icon: <HeartPulse className="w-4 h-4" /> },
-  { id: 'CUSTOM', label: 'Custom / Other', icon: <FileText className="w-4 h-4" /> }
+  { id: 'AI_PARSER', label: 'AI Log Parser', icon: <Sparkles className="w-4 h-4" /> }
 ];
 
 const SUB_CATEGORIES: Record<string, string[]> = {
@@ -39,6 +38,9 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
   const [isHighPriority, setIsHighPriority] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // AI Parser Fields
+  const [rawLogText, setRawLogText] = useState('');
+  
   // UV Protocol State
   const [uvChecks, setUvChecks] = useState<{page1?: Date, page2?: Date, page3?: Date}>({});
 
@@ -48,9 +50,31 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
     setWaitTime('');
     setHasPhoto(false);
     setCustomText('');
+    setRawLogText('');
     setIsHighPriority(false);
     setUvChecks({});
     setIsProcessing(false);
+  };
+
+  const handleAIParse = () => {
+      setIsProcessing(true);
+      // SIMULATION: In a real app, this sends `rawLogText` to Gemini via BigQuery
+      setTimeout(() => {
+          onNewLog({
+              id: Date.now().toString(),
+              timestamp: new Date(),
+              message: `[AI PARSED] ${rawLogText.substring(0, 50)}...`,
+              category: 'OPERATIONAL',
+              severity: IncidentSeverity.LOW,
+              originDept: department,
+              targetDept: [Department.AOCC],
+              agenciesInvolved: [],
+              terminal: currentTerminal,
+              aiAnalysis: "Identified operational concern from unstructured text. Categorized as LOW severity based on keywords."
+          });
+          setIsProcessing(false);
+          resetForm();
+      }, 2000);
   };
 
   const handleSubmit = () => {
@@ -122,14 +146,14 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
            <CheckSquare className="w-5 h-5 text-indigo-400" />
            REPORT INCIDENT
          </h2>
-         <p className="text-[10px] text-slate-400">Digital Logbook & Ops Form</p>
+         <p className="text-[10px] text-slate-400">Digital Logbook & AI Parser</p>
       </div>
 
       <div className="flex-grow p-4 overflow-y-auto">
         
         {/* Step 1: Category */}
         <div className="mb-4">
-           <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Category</label>
+           <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Select Report Type</label>
            <div className="grid grid-cols-2 gap-2">
               {CATEGORIES.map(cat => (
                 <button
@@ -148,31 +172,44 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
            </div>
         </div>
 
-        {/* CUSTOM WRITE MODE */}
-        {selectedCategory === 'CUSTOM' && (
-           <div className="mb-4 animate-in fade-in slide-in-from-top-2">
-               <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Description</label>
-               <textarea 
-                  value={customText}
-                  onChange={(e) => setCustomText(e.target.value)}
-                  placeholder="Describe the situation..."
-                  className="w-full h-32 bg-slate-900 border border-slate-600 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-               />
-               <div className="mt-4 flex items-center justify-between p-3 bg-slate-900 rounded-xl border border-slate-700">
-                  <span className="text-sm font-bold text-slate-300">High Priority?</span>
-                  <button 
-                    onClick={() => setIsHighPriority(!isHighPriority)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg transition-colors ${isHighPriority ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-400'}`}
-                  >
-                     {isHighPriority ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
-                     <span className="text-xs font-bold">{isHighPriority ? 'YES' : 'NO'}</span>
-                  </button>
-               </div>
-           </div>
+        {/* AI PARSER MODE */}
+        {selectedCategory === 'AI_PARSER' && (
+             <div className="mb-4 animate-in fade-in slide-in-from-top-2">
+                <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-500/30 rounded-xl p-4 mb-3">
+                   <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs mb-2">
+                      <Sparkles className="w-4 h-4" /> SMART LOG PARSER
+                   </div>
+                   <p className="text-[10px] text-slate-400 leading-relaxed">
+                      Paste unstructured text from Emails, Viber chats, or SMS. The system will automatically extract Dept, Severity, and Key Issues.
+                   </p>
+                </div>
+                
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Paste Raw Text</label>
+                <div className="relative">
+                    <textarea 
+                        value={rawLogText}
+                        onChange={(e) => setRawLogText(e.target.value)}
+                        placeholder="e.g. 'Fwd: Security incident at Gate 4, passenger refusing bag check. Need backup.'"
+                        className="w-full h-32 bg-slate-900 border border-slate-600 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-mono"
+                    />
+                    <button className="absolute top-2 right-2 p-1 text-slate-500 hover:text-white bg-slate-800 rounded">
+                        <Clipboard className="w-4 h-4" />
+                    </button>
+                </div>
+                
+                <button 
+                    onClick={handleAIParse}
+                    disabled={!rawLogText || isProcessing}
+                    className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"
+                >
+                    {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                    PROCESS WITH AI
+                </button>
+             </div>
         )}
 
         {/* PRE-DEFINED SUB-CATEGORIES */}
-        {selectedCategory && selectedCategory !== 'CUSTOM' && (
+        {selectedCategory && selectedCategory !== 'CUSTOM' && selectedCategory !== 'AI_PARSER' && (
            <div className="mb-4 animate-in fade-in slide-in-from-top-2">
               <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Specific Issue</label>
               <select 
@@ -181,7 +218,7 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
                 onChange={(e) => setSelectedSubCategory(e.target.value)}
               >
                  <option value="">-- Select Issue --</option>
-                 {SUB_CATEGORIES[selectedCategory].map(sub => (
+                 {SUB_CATEGORIES[selectedCategory]?.map(sub => (
                     <option key={sub} value={sub}>{sub}</option>
                  ))}
               </select>
@@ -218,31 +255,6 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
            </div>
         )}
 
-        {/* LOGIC BRANCH: QUEUE */}
-        {selectedSubCategory === 'Queue Congestion' && (
-           <div className="bg-slate-700/30 rounded-xl p-4 mb-4 animate-in zoom-in-95">
-               <div className="text-xs font-bold text-slate-400 mb-2 uppercase">
-                  Location: {currentTerminal === Terminal.T1 ? 'TERMINAL 1 (Counters 1-29)' : 'TERMINAL 2 (Islands A-D)'}
-               </div>
-               <label className="block text-xs font-bold text-slate-300 mb-2">Est. Wait Time</label>
-               <div className="flex gap-2">
-                  {['< 5 mins', '5-10 mins', '>15 mins'].map(opt => (
-                     <button
-                        key={opt}
-                        onClick={() => setWaitTime(opt)}
-                        className={`flex-1 py-2 rounded text-xs font-bold border ${
-                           waitTime === opt
-                           ? opt === '>15 mins' ? 'bg-red-600 border-red-500 text-white' : 'bg-indigo-600 border-indigo-500 text-white'
-                           : 'bg-slate-800 border-slate-600 text-slate-400'
-                        }`}
-                     >
-                        {opt}
-                     </button>
-                  ))}
-               </div>
-           </div>
-        )}
-
         {/* LOGIC BRANCH: MAINTENANCE */}
         {selectedCategory === 'MAINTENANCE' && selectedSubCategory && (
            <div className="mb-4 animate-in zoom-in-95">
@@ -261,22 +273,24 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
       </div>
 
       {/* Footer Submit */}
-      <div className="p-4 bg-slate-900 border-t border-slate-800">
-         <button 
-            disabled={
-               !selectedCategory || isProcessing ||
-               (selectedCategory !== 'CUSTOM' && !selectedSubCategory) ||
-               (selectedCategory === 'CUSTOM' && !customText) ||
-               (selectedSubCategory === 'Unattended Bag (UV)' && !uvChecks.page3) ||
-               (selectedCategory === 'MAINTENANCE' && !hasPhoto)
-            }
-            onClick={handleSubmit}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-         >
-            {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-            {selectedSubCategory === 'Unattended Bag (UV)' && !uvChecks.page3 ? 'Complete 3 Pages First' : 'SUBMIT REPORT'}
-         </button>
-      </div>
+      {selectedCategory !== 'AI_PARSER' && (
+        <div className="p-4 bg-slate-900 border-t border-slate-800">
+            <button 
+                disabled={
+                !selectedCategory || isProcessing ||
+                (selectedCategory !== 'CUSTOM' && !selectedSubCategory) ||
+                (selectedCategory === 'CUSTOM' && !customText) ||
+                (selectedSubCategory === 'Unattended Bag (UV)' && !uvChecks.page3) ||
+                (selectedCategory === 'MAINTENANCE' && !hasPhoto)
+                }
+                onClick={handleSubmit}
+                className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+                {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                {selectedSubCategory === 'Unattended Bag (UV)' && !uvChecks.page3 ? 'Complete 3 Pages First' : 'SUBMIT REPORT'}
+            </button>
+        </div>
+      )}
 
     </div>
   );
