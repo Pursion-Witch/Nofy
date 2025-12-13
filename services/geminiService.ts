@@ -14,7 +14,7 @@ const broadcastAlertTool: FunctionDeclaration = {
     type: Type.OBJECT,
     properties: {
       severity: { type: Type.STRING, enum: Object.values(IncidentSeverity) },
-      message: { type: Type.STRING, description: "The core message describing the incident." },
+      message: { type: Type.STRING, description: "The core message in ENGLISH (Translated from input)." },
       targetDepts: { type: Type.ARRAY, items: { type: Type.STRING, enum: Object.values(Department) }, description: "Departments that need to respond." },
       agencies: { type: Type.ARRAY, items: { type: Type.STRING, enum: Object.values(Agency) } },
       impactedPillar: { type: Type.STRING, enum: Object.values(StrategicPillar), description: "If this affects a strategic project." }
@@ -29,7 +29,7 @@ const relayMessageTool: FunctionDeclaration = {
   parameters: {
     type: Type.OBJECT,
     properties: {
-      message: { type: Type.STRING, description: "The processed information payload." },
+      message: { type: Type.STRING, description: "The processed information payload in ENGLISH (Translated from input)." },
       targetDepts: { type: Type.ARRAY, items: { type: Type.STRING, enum: Object.values(Department) }, description: "Specific departments that handle this type of issue." },
       priority: { type: Type.STRING, enum: ['STANDARD', 'URGENT'], description: "Urgency of the message." }
     },
@@ -70,49 +70,32 @@ const accessPassengerRecordTool: FunctionDeclaration = {
 
 export const processCommandInput = async (input: string, userRole: string, userDept: string) => {
   if (!apiKey) {
+    // Fallback simulation if no API key
     return {
-        text: "System Offline (No API Key). Simulated Routing: " + input,
+        text: `[SYSTEM OFFLINE] ${input}`,
         toolCalls: []
     };
   }
 
   const systemInstruction = `
     You are the "NOFY Relay Engine" for MCIA (Mactan-Cebu International Airport).
-    You are an Intelligent Backend Logic Module. Your job is to classify inputs based on SEVERITY and route them to the correct SILOS (AOCC vs Terminal Ops).
-
-    AOCC PROTOCOL: Handles aircraft, runways, emergency command, high-level resources.
-    TERMINAL OPS PROTOCOL: Handles queues, facilities, passenger flow, initial security.
-
-    STRICT SEVERITY & ROUTING LOGIC:
-
-    1. **LOW SEVERITY** (Log & Track)
-       - Scenario: Cosmetic/Maintenance (e.g., "Dirty washroom", "Flickering light", "No soap").
-       - Action: Route to SAFETY_QUALITY (Janitorial) + TERMINAL_OPS.
-       - Do NOT broadcast to AOCC urgent channels, just log it.
-
-    2. **MEDIUM SEVERITY** (Monitor & Alert)
-       - Scenario: Efficiency Dips.
-       - TRIGGER: Queue times > 10 minutes (Check-in, Travel Tax). Conveyor jams.
-       - Action: Route to TERMINAL_OPS (Supervisor).
-       - Note: "Monitor CCTV".
-
-    3. **URGENT SEVERITY** (Immediate Action / Pre-Incident)
-       - Scenario: Passenger Distress or Pre-Security Risk.
-       - TRIGGER: "Medical", "Fainting", "Vomiting" -> Action: Deploy Airport First Responder (Route to TERMINAL_OPS + SAFETY_QUALITY).
-       - TRIGGER: "UV Discovery" (Unattended Baggage - Initial) -> Action: INITIATE PAGING PROTOCOL (3x). Route to SECURITY + TERMINAL_OPS.
-       - TRIGGER: "Missed Flight Risk" -> Route to AIRLINE_MARKETING + TERMINAL_OPS.
-
-    4. **CRITICAL SEVERITY** (Emergency Response)
-       - Scenario: Threat to life, security breach, system failure.
-       - TRIGGER: "UV Confirmed" (Unattended bag AFTER 3x pages) -> Action: Call PNP/K9. Route to SECURITY + AOCC.
-       - TRIGGER: "Fire", "Smoke", "FOD" (Foreign Object Debris), "Runway Obstruction".
-       - Action: TRIGGER INCIDENT COMMAND. Route to AOCC (Incident Commander) + SECURITY + SAFETY_QUALITY.
-
-    ROUTING RULES:
-    - **AOCC ALWAYS** receives a digital copy of every log, but only alert them via 'broadcastAlert' for CRITICAL issues.
-    - For LOW/MEDIUM/URGENT, use 'relayMessage'.
-    - If user asks to assign gates/stands, use 'allocateResource'.
-
+    
+    PRIMARY OBJECTIVE: TRANSLATION & LOGGING
+    1. RECEIVE input in English, Tagalog (Filipino), or Visayan (Cebuano).
+    2. TRANSLATE the input to professional ENGLISH.
+    3. CALL the appropriate tool ('broadcastAlert' or 'relayMessage') with the TRANSLATED message.
+    
+    SEVERITY DETECTION & TOOLS:
+    - DETECT SEVERITY based on keywords:
+      * CRITICAL: Fire (Sunog), Bomb, Terror, Active Shooter.
+      * URGENT: Medical (Sakit/Kuyap), Missing Child.
+      * HIGH: Fight (Gubot/Suntukan), Theft (Kawat/Nakaw).
+      * LOW/MEDIUM: Maintenance, Delays, Queues.
+    
+    - CALL 'broadcastAlert' for CRITICAL/HIGH/URGENT.
+    - CALL 'relayMessage' for LOW/MEDIUM.
+    - IMPORTANT: The 'message' argument in the tool call MUST be the English translation.
+    
     INPUT CONTEXT: User is ${userRole} from ${userDept}.
   `;
 
@@ -126,13 +109,13 @@ export const processCommandInput = async (input: string, userRole: string, userD
       }
     });
 
-    const text = response.text;
+    const text = response.text || ""; 
     const toolCalls = response.functionCalls || [];
 
     return { text, toolCalls };
 
   } catch (error) {
     console.error("Gemini API Error:", error);
-    throw error;
+    return { text: "AI Service Unavailable: " + input, toolCalls: [] };
   }
 };
