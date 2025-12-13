@@ -1,5 +1,4 @@
 
-
 export type UserRole = string;
 
 export enum Department {
@@ -9,7 +8,7 @@ export enum Department {
   SAFETY_QUALITY = 'SAFETY_QUALITY', // Sanitation, Waste
   APRON_PBB = 'APRON_PBB', // Boarding bridges, Ground parking
   IT_SYSTEMS = 'IT_SYSTEMS',
-  AIRLINE_MARKETING = 'AIRLINE_MARKETING',
+  AIRLINE_OPS = 'AIRLINE_OPS', // Flight crews, Boarding, Check-in
   CUSTOMER_EXP = 'CUSTOMER_EXP' // Voice of customer, Govt relations
 }
 
@@ -42,14 +41,20 @@ export enum Terminal {
 
 export type UserStatus = 'ONLINE' | 'BUSY' | 'AWAY' | 'OFFLINE' | 'BREAK' | 'LEAVE';
 
+// New Access Levels
+export type AccessLevel = 'ADMIN' | 'OPERATOR' | 'VIEWER' | 'RESTRICTED';
+
 export interface UserProfile {
   id: string;
+  employeeId: string; // New: Specific ID based on role
   name: string;
   email: string;
   role: string;
   department: Department;
   status: UserStatus | string;
   allowedTerminals: Terminal[];
+  accessLevel: AccessLevel; // New: Controls UI permission
+  airline?: string; // New field for Airline Ops privacy
 }
 
 export interface ChatChannel {
@@ -77,13 +82,14 @@ export interface LogEntry {
   id: string;
   timestamp: Date;
   message: string;
-  category: 'INCIDENT' | 'PASSENGER' | 'RESOURCE' | 'STRATEGIC' | 'SYSTEM' | 'OPERATIONAL' | 'CALL_LOG';
+  category: 'INCIDENT' | 'PASSENGER' | 'RESOURCE' | 'STRATEGIC' | 'SYSTEM' | 'OPERATIONAL' | 'CALL_LOG' | 'AIRLINE_REQ';
   severity: IncidentSeverity;
   originDept: Department;
   targetDept: Department[];
   agenciesInvolved: Agency[];
   terminal: Terminal;
   aiAnalysis?: string;
+  relatedAirline?: string; // For filtering alerts
 }
 
 export interface ResourceStatus {
@@ -168,6 +174,63 @@ export enum TransferStatus {
   DELAYED = 'DELAYED',
   MISSING = 'MISSING',
   ATTENTION = 'ATTENTION'
+}
+
+// CEBU+ TYPES (Sea-Air)
+export enum CebuPlusStatus {
+  ARRIVED = 'ARRIVED',
+  DEPLANED = 'DEPLANED',        // From Flight
+  DISEMBARKED = 'DISEMBARKED',  // From Ferry
+  BAG_DROP = 'BAG_DROP',
+  IN_TRANSIT_SEAPORT = 'IN_TRANSIT_SEAPORT', // On the bus/van to Seaport
+  IN_TRANSIT_AIRPORT = 'IN_TRANSIT_AIRPORT', // On the bus/van to Airport
+  CHECKED_THRU = 'CHECKED_THRU',
+  WAITING = 'WAITING',
+  DELAYED = 'DELAYED',
+  BOARDED = 'BOARDED',
+  MISSING = 'MISSING',
+  ATTENTION = 'ATTENTION'
+}
+
+export interface CebuPlusPassenger {
+  id: string;
+  name: string;
+  pnr: string;
+  identityDoc: string;
+  direction: 'AIRPORT_TO_SEAPORT' | 'SEAPORT_TO_AIRPORT';
+  originTransport: string; // Flight Number or Ferry Name
+  originStatus: string;
+  connectingTransport: string; // Ferry Name or Flight Number
+  connectingStatus: string; // Ferry Operator or Flight Status
+  operator: string;
+  operatorContact: string;
+  assignedVehicle: string; // e.g. "Van-01", "Shuttle-A"
+  vehicleContact: string;
+  status: CebuPlusStatus;
+  timeToDepart: number; // Minutes
+  alertDetails?: string;
+}
+
+// CEB-BALIK TYPES (OFW)
+export enum OFWStatus {
+  DEPLANED = 'DEPLANED',
+  AT_IMMIGRATION = 'AT_IMMIGRATION',
+  BAG_DROP = 'BAG_DROP',
+  CLEARED = 'CLEARED',
+  ATTENTION = 'ATTENTION'
+}
+
+export interface OFWPassenger {
+  id: string;
+  name: string;
+  passport: string;
+  flightNumber: string;
+  airline: string;
+  flightStatus: 'INBOUND' | 'ARRIVED' | 'DELAYED' | 'CANCELLED';
+  status: OFWStatus;
+  connectingType: 'FLIGHT' | 'SEA' | 'NONE';
+  connectingDetails?: string; // "PR 2850" or "OceanJet"
+  alertDetails?: string;
 }
 
 export interface TransferPassenger {
