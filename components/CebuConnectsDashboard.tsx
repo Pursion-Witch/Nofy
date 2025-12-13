@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowRight, ArrowRightLeft, AlertTriangle, 
-  CheckCircle2, Phone, Megaphone, Stethoscope, 
+  CheckCircle2, Megaphone, Stethoscope, 
   UserCheck, X, Search, CreditCard
 } from 'lucide-react';
 import { TransferPassenger, TransferStatus } from '../types';
@@ -141,10 +140,21 @@ export const CebuConnectsDashboard: React.FC<CebuConnectsDashboardProps> = ({ on
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex flex-col animate-in fade-in duration-300 overflow-hidden">
+    <div className="fixed inset-0 z-[100] bg-slate-950/95 backdrop-blur-md flex flex-col animate-in fade-in duration-300 overflow-hidden h-[100dvh]">
       
+      {/* Hide Scrollbar Style */}
+      <style>{`
+        .hide-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+
       {/* HEADER */}
-      <div className="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shadow-lg shrink-0">
+      <div className="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shadow-lg shrink-0 z-20">
         <div className="flex items-center gap-3 md:gap-4">
           <div className="p-2 md:p-3 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-500/20">
             <ArrowRightLeft className="w-5 h-5 md:w-6 md:h-6 text-white" />
@@ -162,10 +172,10 @@ export const CebuConnectsDashboard: React.FC<CebuConnectsDashboardProps> = ({ on
       </div>
 
       {/* DASHBOARD CONTENT CONTAINER */}
-      <div className="flex-grow flex flex-col md:flex-row overflow-hidden">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
         
         {/* STATS BAR (Sidebar on Desktop, Horizontal Scroll on Mobile) */}
-        <div className="w-full md:w-80 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-4 md:p-6 flex md:flex-col gap-4 md:gap-6 overflow-x-auto md:overflow-y-auto shrink-0 hide-scrollbar">
+        <div className="w-full md:w-80 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 p-4 md:p-6 flex md:flex-col gap-4 md:gap-6 overflow-x-auto md:overflow-y-auto shrink-0 hide-scrollbar z-10 max-h-[160px] md:max-h-full">
            
            <div className="min-w-[240px] md:min-w-0 bg-gradient-to-br from-indigo-900/40 to-slate-800 p-4 md:p-5 rounded-2xl border border-indigo-500/20 shrink-0">
               <h3 className="text-xs md:text-sm font-bold text-slate-300 mb-2">Transfer Efficiency</h3>
@@ -208,10 +218,10 @@ export const CebuConnectsDashboard: React.FC<CebuConnectsDashboardProps> = ({ on
         </div>
 
         {/* RIGHT: PASSENGER LIST */}
-        <div className="flex-1 flex flex-col bg-slate-950 min-w-0">
+        <div className="flex-1 flex flex-col bg-slate-950 min-w-0 min-h-0 overflow-hidden">
            
            {/* TOOLBAR */}
-           <div className="p-4 border-b border-slate-800 flex flex-col xl:flex-row gap-4">
+           <div className="p-4 border-b border-slate-800 flex flex-col xl:flex-row gap-4 shrink-0 bg-slate-900/50 backdrop-blur z-10">
               {/* FILTERS (Scrollable on small screens) */}
               <div className="flex items-center gap-2 bg-slate-900 p-1 rounded-lg border border-slate-700 overflow-x-auto hide-scrollbar w-full xl:w-auto">
                  {['ALL', 'CRITICAL', 'INTL-DOM', 'DOM-INTL', 'INTL-INTL', 'DOM-DOM'].map((f) => (
@@ -243,7 +253,7 @@ export const CebuConnectsDashboard: React.FC<CebuConnectsDashboardProps> = ({ on
            </div>
 
            {/* CONTENT AREA */}
-           <div className="flex-grow overflow-y-auto p-4 md:p-6 bg-slate-950 custom-scrollbar">
+           <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-950 hide-scrollbar pb-32">
               
               {/* DESKTOP TABLE VIEW (Hidden on Mobile) */}
               <div className="hidden md:block">
@@ -356,7 +366,7 @@ export const CebuConnectsDashboard: React.FC<CebuConnectsDashboardProps> = ({ on
                         <div className="flex items-center justify-between">
                            <div>{getStatusBadge(t)}</div>
                            <div className="flex gap-2">
-                              <button onClick={() => handleAction(t.id, 'Paging')} className="p-2 bg-indigo-600 text-white rounded-lg">
+                              <button onClick={() => handleAction(t.id, 'Paging')} className="p-2 bg-indigo-600 text-white rounded-lg shadow-lg">
                                  <Megaphone className="w-4 h-4" />
                               </button>
                               <button onClick={() => handleAction(t.id, 'Medical')} className="p-2 bg-rose-900/50 text-rose-200 border border-rose-800 rounded-lg">

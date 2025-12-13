@@ -1,5 +1,4 @@
 
-
 import React, { useState } from 'react';
 import { LogEntry, IncidentSeverity, Agency } from '../types';
 import { AlertCircle, CheckCircle, Info, Building2, Maximize2, X, Minimize2 } from 'lucide-react';
@@ -51,14 +50,6 @@ export const LiveLog: React.FC<LiveLogProps> = ({ logs }) => {
                   </span>
                 ))}
               </div>
-            )}
-
-            {/* AI Analysis Hint */}
-            {log.aiAnalysis && (
-                 <div className="mt-2 p-2 bg-black/20 rounded text-xs text-slate-400 font-mono border-t border-white/5">
-                    <span className="text-sky-500 font-bold mr-1">NEXUS_CORE:</span> 
-                    {log.aiAnalysis.substring(0, 100)}...
-                 </div>
             )}
           </div>
         ))}

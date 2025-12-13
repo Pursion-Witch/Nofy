@@ -3,23 +3,27 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plane, Shield, Users, Monitor, Truck, 
   Activity, RadioTower, Globe, Briefcase, 
-  ChevronRight, ArrowLeft, HeartHandshake, Smile, Map, Check
+  ChevronRight, ArrowLeft, HeartHandshake, Smile, Map, Check, Key
 } from 'lucide-react';
-import { UserRole, Department, Terminal } from '../types';
+import { UserRole, Department, Terminal, AccessLevel } from '../types';
 
 interface LoginScreenProps {
-  onLogin: (role: UserRole, dept: Department, name: string, allowedTerminals: Terminal[]) => void;
+  onLogin: (role: UserRole, dept: Department, name: string, allowedTerminals: Terminal[], accessLevel: AccessLevel, employeeId: string, airline?: string) => void;
   initialEmail: string;
   initialName?: string;
 }
 
 const OPERATIONAL_DEPTS = [
-  { id: Department.SECURITY, label: 'Security', icon: <Shield className="w-5 h-5" /> },
   { id: Department.TERMINAL_OPS, label: 'Terminal Operations', icon: <Users className="w-5 h-5" /> },
+  { id: Department.AIRLINE_OPS, label: 'Airline Operations', icon: <Plane className="w-5 h-5" /> },
+  { id: Department.SECURITY, label: 'Security', icon: <Shield className="w-5 h-5" /> },
   { id: Department.SAFETY_QUALITY, label: 'Safety & Quality', icon: <HeartHandshake className="w-5 h-5" /> },
   { id: Department.APRON_PBB, label: 'Apron & PBB', icon: <Truck className="w-5 h-5" /> },
-  { id: Department.AIRLINE_MARKETING, label: 'Airline Marketing', icon: <Globe className="w-5 h-5" /> },
   { id: Department.CUSTOMER_EXP, label: 'Customer Experience', icon: <Smile className="w-5 h-5" /> }
+];
+
+const AIRLINES = [
+    'Philippine Airlines', 'Cebu Pacific', 'AirAsia', 'Scoot', 'Korean Air', 'Cathay Pacific', 'Emirates', 'Qatar Airways', 'Jeju Air'
 ];
 
 // Group Definitions
@@ -64,7 +68,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
   const [selectedGroup, setSelectedGroup] = useState<typeof DEPT_GROUPS[0] | null>(null);
   const [selectedDept, setSelectedDept] = useState<Department | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedAirline, setSelectedAirline] = useState<string>('');
   const [name, setName] = useState(initialName || '');
+
+  // Access Calculation State
+  const [generatedId, setGeneratedId] = useState('');
+  const [computedAccess, setComputedAccess] = useState<AccessLevel>('RESTRICTED');
 
   useEffect(() => {
     if (initialName) setName(initialName);
@@ -77,13 +86,64 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
 
   const handleDeptSelect = (dept: Department) => {
     setSelectedDept(dept);
+    
+    // CALCULATE PERMISSIONS & ID
+    if (selectedGroup) {
+        let access: AccessLevel = 'RESTRICTED';
+        let idPrefix = '';
+
+        // 1. Determine Terminal Prefix
+        if (selectedGroup.id === 'AOCC_CORE') idPrefix = 'AOCC';
+        else if (selectedGroup.id === 'DOMESTIC_OPS') idPrefix = 'T1';
+        else idPrefix = 'T2';
+
+        // 2. Determine Dept Code and Access Level
+        let deptCode = 'OPS';
+        
+        switch (dept) {
+            case Department.AOCC:
+            case Department.IT_SYSTEMS:
+                access = 'ADMIN';
+                deptCode = dept === Department.AOCC ? 'ADM' : 'SYS';
+                break;
+            case Department.TERMINAL_OPS:
+                access = 'OPERATOR';
+                deptCode = 'OPS';
+                break;
+            case Department.AIRLINE_OPS:
+                access = 'OPERATOR';
+                deptCode = 'AIR';
+                break;
+            case Department.SECURITY:
+                access = 'VIEWER';
+                deptCode = 'SEC';
+                break;
+            case Department.SAFETY_QUALITY:
+                access = 'RESTRICTED';
+                deptCode = 'SFT';
+                break;
+            case Department.APRON_PBB:
+                access = 'RESTRICTED';
+                deptCode = 'PBB';
+                break;
+            case Department.CUSTOMER_EXP:
+                access = 'RESTRICTED';
+                deptCode = 'CXP';
+                break;
+        }
+
+        const randomNum = Math.floor(1000 + Math.random() * 9000);
+        setGeneratedId(`${idPrefix}-${deptCode}-${randomNum}`);
+        setComputedAccess(access);
+    }
+    
     setStep(3);
   };
 
   const handleFinalSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedDept && name && selectedRole && selectedGroup) {
-      onLogin(selectedRole, selectedDept, name, selectedGroup.allowedTerminals);
+      onLogin(selectedRole, selectedDept, name, selectedGroup.allowedTerminals, computedAccess, generatedId, selectedAirline || undefined);
     }
   };
 
@@ -200,12 +260,41 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
             {/* STEP 3: ROLE & NAME CONFIRMATION */}
             {step === 3 && (
               <form onSubmit={handleFinalSubmit} className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                <div className="text-center mb-6">
-                   <h2 className="text-lg font-bold text-white">Finalize Profile</h2>
-                   <p className="text-sm text-slate-400">Complete authentication</p>
+                <div className="bg-slate-900/50 p-4 rounded-xl border border-slate-700 text-center">
+                   <div className="text-[10px] text-slate-400 uppercase font-bold mb-1">Generated Employee ID</div>
+                   <div className="text-2xl font-black text-white tracking-widest font-mono flex items-center justify-center gap-2">
+                       {generatedId}
+                       <Key className="w-4 h-4 text-indigo-400" />
+                   </div>
+                   <div className={`mt-2 inline-flex px-2 py-0.5 rounded text-[10px] font-bold border ${
+                       computedAccess === 'ADMIN' ? 'bg-indigo-900/30 text-indigo-400 border-indigo-500/30' :
+                       computedAccess === 'OPERATOR' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-500/30' :
+                       computedAccess === 'VIEWER' ? 'bg-amber-900/30 text-amber-400 border-amber-500/30' :
+                       'bg-slate-700 text-slate-400 border-slate-600'
+                   }`}>
+                       PERMISSION: {computedAccess}
+                   </div>
                 </div>
 
                 <div className="space-y-4">
+                  {/* AIRLINE OPS SPECIFIC SELECTOR */}
+                  {selectedDept === Department.AIRLINE_OPS && (
+                      <div>
+                        <label className="block text-xs font-bold text-amber-400 uppercase mb-2 ml-1">Select Airline</label>
+                        <select
+                            value={selectedAirline}
+                            onChange={(e) => setSelectedAirline(e.target.value)}
+                            required
+                            className="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                        >
+                            <option value="">-- Choose Airline --</option>
+                            {AIRLINES.map(air => (
+                                <option key={air} value={air}>{air}</option>
+                            ))}
+                        </select>
+                      </div>
+                  )}
+
                   <div>
                     <label className="block text-xs font-bold text-slate-400 uppercase mb-2 ml-1">Rank / Job Title</label>
                     <input 
@@ -234,7 +323,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
 
                 <button 
                   type="submit"
-                  className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+                  disabled={selectedDept === Department.AIRLINE_OPS && !selectedAirline}
+                  className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-500/20 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
                 >
                   <Check className="w-5 h-5" />
                   COMPLETE SETUP

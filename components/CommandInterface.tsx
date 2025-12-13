@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { Send, Loader2, PackageX, HeartPulse, CheckSquare, AlertTriangle, Users, FileText, ToggleLeft, ToggleRight, Sparkles, Clipboard, Camera } from 'lucide-react';
+import { Send, Loader2, PackageX, HeartPulse, CheckSquare, AlertTriangle, Users, FileText, ToggleLeft, ToggleRight, Sparkles, Clipboard, Camera, ArrowLeft } from 'lucide-react';
 import { LogEntry, IncidentSeverity, Department, UserRole, Terminal } from '../types';
+import { processCommandInput } from '../services/geminiService';
 
 interface CommandInterfaceProps {
   role: UserRole;
@@ -9,6 +10,7 @@ interface CommandInterfaceProps {
   userName: string;
   currentTerminal: Terminal;
   onNewLog: (log: LogEntry) => void;
+  onBack: () => void;
 }
 
 // Cascading Dropdown Options
@@ -27,7 +29,7 @@ const SUB_CATEGORIES: Record<string, string[]> = {
   'MEDICAL': ['Passenger Fainting', 'Wheelchair Assist', 'Injury', 'Cardiac']
 };
 
-export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, department, userName, currentTerminal, onNewLog }) => {
+export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, department, userName, currentTerminal, onNewLog, onBack }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('');
   
@@ -56,25 +58,67 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
     setIsProcessing(false);
   };
 
-  const handleAIParse = () => {
+  const handleAIParse = async () => {
       setIsProcessing(true);
-      // SIMULATION: In a real app, this sends `rawLogText` to Gemini via BigQuery
-      setTimeout(() => {
-          onNewLog({
-              id: Date.now().toString(),
-              timestamp: new Date(),
-              message: `[AI PARSED] ${rawLogText.substring(0, 50)}...`,
-              category: 'OPERATIONAL',
-              severity: IncidentSeverity.LOW,
-              originDept: department,
-              targetDept: [Department.AOCC],
-              agenciesInvolved: [],
-              terminal: currentTerminal,
-              aiAnalysis: "Identified operational concern from unstructured text. Categorized as LOW severity based on keywords."
-          });
-          setIsProcessing(false);
-          resetForm();
-      }, 2000);
+      
+      try {
+        // Call Real Gemini Service
+        const result = await processCommandInput(rawLogText, role, department);
+        
+        let severity = IncidentSeverity.LOW;
+        let finalMessage = result.text || rawLogText; // Default to raw if AI fails completely
+
+        // CRITICAL FIX: Extract translated message from Tool Calls
+        if (result.toolCalls && result.toolCalls.length > 0) {
+            const tool = result.toolCalls[0];
+            
+            // Extract Severity
+            // @ts-ignore
+            if (tool.args && tool.args.severity) {
+                // @ts-ignore
+                severity = tool.args.severity as IncidentSeverity;
+            }
+            // @ts-ignore
+            if (tool.args && tool.args.priority === 'URGENT') {
+                severity = IncidentSeverity.URGENT;
+            }
+
+            // Extract Translated Message (This is the key fix)
+            // @ts-ignore
+            if (tool.args && tool.args.message) {
+                // @ts-ignore
+                finalMessage = tool.args.message;
+            }
+        } else {
+            // Fallback keywords if no tool called (simulation or error)
+            const textLower = rawLogText.toLowerCase();
+            if (textLower.includes('sunog') || textLower.includes('fire')) severity = IncidentSeverity.CRITICAL;
+            else if (textLower.includes('sakit') || textLower.includes('faint')) severity = IncidentSeverity.URGENT;
+        }
+
+        const newLog: LogEntry = {
+            id: Date.now().toString(),
+            timestamp: new Date(),
+            message: `[AI PARSED] ${finalMessage}`, // Contains the translated text
+            category: 'OPERATIONAL',
+            severity: severity,
+            originDept: department,
+            targetDept: [Department.AOCC],
+            agenciesInvolved: [],
+            terminal: currentTerminal,
+            // Removed aiAnalysis field as requested
+        };
+
+        onNewLog(newLog);
+        setIsProcessing(false);
+        resetForm();
+        onBack();
+
+      } catch (e) {
+        console.error(e);
+        setIsProcessing(false);
+        alert("AI Processing Failed. Please submit manually.");
+      }
   };
 
   const handleSubmit = () => {
@@ -134,6 +178,7 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
       onNewLog(newLog);
       setIsProcessing(false);
       resetForm();
+      onBack(); // Navigate back to feed
     }, 1000);
   };
 
@@ -141,12 +186,21 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
     <div className="bg-slate-800 rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden flex flex-col h-full relative">
       
       {/* Header */}
-      <div className="bg-slate-900/80 p-4 border-b border-slate-700">
-         <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
-           <CheckSquare className="w-5 h-5 text-indigo-400" />
-           REPORT INCIDENT
-         </h2>
-         <p className="text-[10px] text-slate-400">Digital Logbook & AI Parser</p>
+      <div className="bg-slate-900/80 p-4 border-b border-slate-700 flex items-center gap-4">
+         <button 
+           onClick={onBack}
+           className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors"
+           title="Back to Live Log"
+         >
+            <ArrowLeft className="w-5 h-5" />
+         </button>
+         <div>
+            <h2 className="text-lg font-bold text-slate-200 flex items-center gap-2">
+              <CheckSquare className="w-5 h-5 text-indigo-400" />
+              REPORT INCIDENT
+            </h2>
+            <p className="text-[10px] text-slate-400">Digital Logbook & AI Parser</p>
+         </div>
       </div>
 
       <div className="flex-grow p-4 overflow-y-auto">
@@ -177,10 +231,11 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
              <div className="mb-4 animate-in fade-in slide-in-from-top-2">
                 <div className="bg-gradient-to-r from-indigo-900/30 to-purple-900/30 border border-indigo-500/30 rounded-xl p-4 mb-3">
                    <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs mb-2">
-                      <Sparkles className="w-4 h-4" /> SMART LOG PARSER
+                      <Sparkles className="w-4 h-4" /> SMART LOG PARSER (Trilingual)
                    </div>
                    <p className="text-[10px] text-slate-400 leading-relaxed">
-                      Paste unstructured text from Emails, Viber chats, or SMS. The system will automatically extract Dept, Severity, and Key Issues.
+                      Paste unstructured text from Emails, Viber, or SMS. Supports <strong>English, Tagalog, and Visayan</strong>. 
+                      Auto-translates to English and detects severity.
                    </p>
                 </div>
                 
@@ -189,7 +244,7 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
                     <textarea 
                         value={rawLogText}
                         onChange={(e) => setRawLogText(e.target.value)}
-                        placeholder="e.g. 'Fwd: Security incident at Gate 4, passenger refusing bag check. Need backup.'"
+                        placeholder="e.g. 'Naay gubot sa Gate 5, nag-away ang pasahero.' (Detected -> High Severity + Translation)"
                         className="w-full h-32 bg-slate-900 border border-slate-600 rounded-xl p-3 text-sm text-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none font-mono"
                     />
                     <button className="absolute top-2 right-2 p-1 text-slate-500 hover:text-white bg-slate-800 rounded">
@@ -203,7 +258,7 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
                     className="w-full mt-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2"
                 >
                     {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-                    PROCESS WITH AI
+                    PROCESS & SUBMIT
                 </button>
              </div>
         )}

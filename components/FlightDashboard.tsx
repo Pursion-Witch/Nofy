@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { Flight, Terminal, Department } from '../types';
+import { Flight, Terminal, Department, UserProfile } from '../types';
 import { 
   Plane, AlertTriangle, Clock, MapPin, 
   Accessibility, Stethoscope, Baby, Crown, 
-  Filter, AlertCircle, FileText, Luggage, Megaphone, ArrowRight, UserCheck
+  Filter, AlertCircle, FileText, Luggage, Megaphone, ArrowRight, UserCheck, Lock, Eye
 } from 'lucide-react';
 import { FlightManifest } from './FlightManifest';
 
@@ -12,12 +12,13 @@ interface FlightDashboardProps {
   flights: Flight[];
   currentTerminal: Terminal;
   userRole: Department;
+  currentUser?: UserProfile;
 }
 
 type TabMode = 'INCOMING' | 'OUTGOING' | 'ISSUES';
 type FilterScope = 'ALL' | 'T1' | 'T2';
 
-export const FlightDashboard: React.FC<FlightDashboardProps> = ({ flights, currentTerminal, userRole }) => {
+export const FlightDashboard: React.FC<FlightDashboardProps> = ({ flights, currentTerminal, userRole, currentUser }) => {
   const [activeTab, setActiveTab] = useState<TabMode>('OUTGOING');
   const [aoccFilter, setAoccFilter] = useState<FilterScope>('ALL');
   const [selectedManifestFlight, setSelectedManifestFlight] = useState<Flight | null>(null);
@@ -27,6 +28,10 @@ export const FlightDashboard: React.FC<FlightDashboardProps> = ({ flights, curre
 
   // PERMISSION LOGIC:
   const isAOCC = userRole === Department.AOCC || userRole === Department.IT_SYSTEMS;
+  
+  // RBAC Checks
+  const canEdit = currentUser?.accessLevel === 'ADMIN' || currentUser?.accessLevel === 'OPERATOR';
+  const canViewManifest = canEdit || currentUser?.accessLevel === 'VIEWER';
 
   const getFilteredFlights = () => {
     let scopeFiltered = flights;
@@ -76,6 +81,7 @@ export const FlightDashboard: React.FC<FlightDashboardProps> = ({ flights, curre
   };
 
   const sendAdvisory = (type: string, flightNum: string) => {
+      if (!canEdit) return;
       alert(`[SIMULATION] Sending advisory "${type}" to all passengers of ${flightNum}. Apps and Screens updating.`);
       setAdvisoryOpenId(null);
   };
@@ -290,8 +296,8 @@ export const FlightDashboard: React.FC<FlightDashboardProps> = ({ flights, curre
                                    </div>
 
                                    <div className="flex gap-2">
-                                       {/* ADVISORY BUTTON FOR DISRUPTED FLIGHTS */}
-                                       {isDisrupted && (
+                                       {/* ADVISORY BUTTON FOR DISRUPTED FLIGHTS (ONLY EDITORS) */}
+                                       {canEdit && isDisrupted && (
                                            <div className="relative">
                                                <button 
                                                  onClick={() => setAdvisoryOpenId(advisoryOpenId === f.flightNumber ? null : f.flightNumber)}
@@ -320,13 +326,24 @@ export const FlightDashboard: React.FC<FlightDashboardProps> = ({ flights, curre
                                            </div>
                                        )}
 
-                                       <button 
-                                         onClick={(e) => { e.stopPropagation(); setSelectedManifestFlight(f); }}
-                                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-indigo-600 hover:text-white text-slate-300 text-[10px] font-bold transition-all"
-                                       >
-                                          <FileText className="w-3 h-3" />
-                                          MANIFEST
-                                       </button>
+                                       {/* MANIFEST BUTTON WITH PERMISSION LOGIC */}
+                                       {canViewManifest ? (
+                                           <button 
+                                             onClick={(e) => { e.stopPropagation(); setSelectedManifestFlight(f); }}
+                                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
+                                                 canEdit 
+                                                 ? 'bg-slate-700 hover:bg-indigo-600 hover:text-white text-slate-300' 
+                                                 : 'bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-400'
+                                             }`}
+                                           >
+                                              {canEdit ? <FileText className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                              {canEdit ? 'MANIFEST' : 'VIEW ONLY'}
+                                           </button>
+                                       ) : (
+                                           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700 text-slate-600 text-[10px] font-bold cursor-not-allowed">
+                                              <Lock className="w-3 h-3" /> RESTRICTED
+                                           </div>
+                                       )}
                                    </div>
                                 </div>
                            </div>
@@ -342,6 +359,7 @@ export const FlightDashboard: React.FC<FlightDashboardProps> = ({ flights, curre
             flight={selectedManifestFlight} 
             onClose={() => setSelectedManifestFlight(null)} 
             onSwitchFlight={handleSwitchFlight}
+            readOnly={!canEdit} // Pass readOnly prop if user is a VIEWER
          />
       )}
 

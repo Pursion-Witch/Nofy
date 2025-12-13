@@ -12,12 +12,9 @@ export const StaffRoster: React.FC<StaffRosterProps> = ({ currentUser, allUsers 
   
   // FILTERING LOGIC
   const getVisibleStaff = () => {
-    // 1. AOCC User: Sees IT Systems & Other AOCC Staff
+    // 1. AOCC / IT User: Sees EVERYONE (Global Command)
     if (currentUser.department === Department.AOCC || currentUser.department === Department.IT_SYSTEMS) {
-      return allUsers.filter(u => 
-        u.department === Department.IT_SYSTEMS || 
-        u.department === Department.AOCC
-      );
+      return allUsers;
     }
 
     // 2. Terminal Ops User: Sees Staff in their assigned Terminal
@@ -26,7 +23,7 @@ export const StaffRoster: React.FC<StaffRosterProps> = ({ currentUser, allUsers 
     
     return allUsers.filter(u => {
       // Show if user is in same department group OR is supporting that terminal
-      if (u.department === Department.TERMINAL_OPS) {
+      if (u.department === Department.TERMINAL_OPS || u.department === Department.SECURITY) {
          return u.allowedTerminals.includes(myTerminal);
       }
       return false; // Default hide others for now to keep it clean
@@ -66,6 +63,7 @@ export const StaffRoster: React.FC<StaffRosterProps> = ({ currentUser, allUsers 
                       <span className="bg-slate-700/50 px-1.5 py-0.5 rounded">{u.role}</span>
                       {u.department === Department.IT_SYSTEMS && <Laptop className="w-3 h-3 text-indigo-400" />}
                       {u.department === Department.AOCC && <Activity className="w-3 h-3 text-rose-400" />}
+                      {u.department === Department.SECURITY && <Shield className="w-3 h-3 text-blue-400" />}
                    </div>
                 </div>
              </div>
@@ -81,7 +79,7 @@ export const StaffRoster: React.FC<StaffRosterProps> = ({ currentUser, allUsers 
        {/* Header Summary */}
        <div className="mb-6 bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-lg">
           <h3 className="text-sm font-bold text-white mb-1">
-             {currentUser.department === Department.AOCC ? 'IT & AOCC Command' : 'Terminal Ops Team'}
+             {currentUser.department === Department.AOCC ? 'Global Command Roster' : 'Terminal Ops Team'}
           </h3>
           <p className="text-[10px] text-slate-400 mb-3">Real-time attendance & status monitor</p>
           <div className="flex gap-2">

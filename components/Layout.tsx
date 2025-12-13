@@ -15,7 +15,7 @@ interface LayoutProps {
   chatChannels: ChatChannel[];
   chatMessages: ChatMessage[];
   onSendMessage: (channelId: string, content: string) => void;
-  onCreateChannel: (name: string, participants: string[]) => void;
+  onCreateChannel: (name: string, participants: string[], type: 'DIRECT' | 'GROUP') => void;
   mockUsers: UserProfile[];
   onStatusChange?: (status: string) => void; 
   latestCriticalLog?: LogEntry | null; 

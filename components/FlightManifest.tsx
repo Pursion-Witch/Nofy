@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   X, User, Search, Filter, Shield, AlertTriangle, 
   CheckCircle2, Crown, Stethoscope, Plane, Luggage, 
-  MoreVertical, Megaphone, Ambulance, Accessibility, FileText, ArrowRightLeft, Siren, ExternalLink, ChevronDown
+  MoreVertical, Megaphone, Ambulance, Accessibility, FileText, ArrowRightLeft, Siren, ExternalLink, ChevronDown, Activity, Baby, EyeOff, EarOff, MapPin, Building2, Eye
 } from 'lucide-react';
 import { Flight, Manifest, Passenger, CrewMember, PassengerStatus, TravelClass } from '../types';
 
@@ -11,6 +11,7 @@ interface FlightManifestProps {
   flight: Flight;
   onClose: () => void;
   onSwitchFlight?: (targetFlightNumber: string) => void;
+  readOnly?: boolean; // New Prop for Permissions
 }
 
 // --- MOCK DATA GENERATOR ---
@@ -18,12 +19,22 @@ const NAMES_FIRST = ['Juan', 'Maria', 'Jose', 'Ana', 'Pedro', 'Luis', 'Sofia', '
 const NAMES_LAST = ['Santos', 'Reyes', 'Cruz', 'Garcia', 'Mendoza', 'Torres', 'Flores', 'Lim', 'Tan', 'Dela Cruz', 'Smith', 'Johnson', 'Williams', 'Brown', 'Jones'];
 const NATIONALITIES = ['PHL', 'PHL', 'PHL', 'USA', 'KOR', 'JPN', 'CHN', 'SGP', 'GBR'];
 const ALERT_REASONS = [
-    'Medical: High Blood Pressure',
     'Security: Unruly Behavior',
     'Operations: Late Connection',
     'Immigration: Document Check',
-    'Medical: Fainting',
     'Operations: Lost Item Reported'
+];
+
+// SPECIFIC MEDICAL CONDITIONS
+const MEDICAL_CONDITIONS = [
+    'Dementia - Needs Escort',
+    'Heart Condition - Avoid Stress',
+    'Pregnant (28 Weeks)',
+    'Diabetic - Insulin Maintenance',
+    'PWD - Non-ambulatory',
+    'Hypertension Monitor',
+    'Vision Impaired - Blind',
+    'Hearing Impaired - Deaf'
 ];
 
 const generateMockManifest = (flight: Flight): Manifest => {
@@ -54,6 +65,18 @@ const generateMockManifest = (flight: Flight): Manifest => {
     let status = PassengerStatus.BOARDED; // Default
     let alertDetails = undefined;
     let connectingFlight = undefined;
+    let medicalInfo = undefined;
+    let ssr = [];
+
+    // ASSIGN MEDICAL CONDITIONS RANDOMLY (Higher chance for demo visibility)
+    if (Math.random() > 0.85) {
+        medicalInfo = MEDICAL_CONDITIONS[Math.floor(Math.random() * MEDICAL_CONDITIONS.length)];
+        ssr.push('MEDA');
+        if (medicalInfo.includes('PWD') || medicalInfo.includes('Non-ambulatory')) ssr.push('WCHR');
+        if (medicalInfo.includes('Pregnant')) ssr.push('PREG');
+        if (medicalInfo.includes('Blind')) ssr.push('BLND');
+        if (medicalInfo.includes('Deaf')) ssr.push('DEAF');
+    }
 
     if (isArrival) {
        // ARRIVAL LOGIC
@@ -71,7 +94,7 @@ const generateMockManifest = (flight: Flight): Manifest => {
            status = PassengerStatus.TRANSFER_DOMESTIC;
            connectingFlight = `5J ${Math.floor(300 + Math.random() * 600)}`;
        }
-       else status = PassengerStatus.DEPLANED; // Most have deplaned if landed
+       else status = PassengerStatus.DEPLANED; 
        
        if (flight.status === 'APPROACHING') status = PassengerStatus.CHECKED_IN; 
     } else {
@@ -86,9 +109,7 @@ const generateMockManifest = (flight: Flight): Manifest => {
        else status = PassengerStatus.BOARDED;
     }
 
-    const ssr = [];
-    if (Math.random() > 0.95) ssr.push('WCHR');
-    if (Math.random() > 0.98) ssr.push('MEDA');
+    if (Math.random() > 0.95 && !ssr.includes('WCHR')) ssr.push('WCHR');
     if (Math.random() > 0.9) ssr.push('VGML');
 
     // Generate Passport/ID
@@ -106,7 +127,7 @@ const generateMockManifest = (flight: Flight): Manifest => {
       nationality: NATIONALITIES[Math.floor(Math.random() * NATIONALITIES.length)],
       isVip: isBiz || Math.random() > 0.98,
       ssrCodes: ssr,
-      medicalInfo: ssr.includes('MEDA') ? 'Hypertension history, carries medication' : undefined,
+      medicalInfo: medicalInfo,
       baggageCount: Math.floor(Math.random() * 3),
       hasBoarded: status === PassengerStatus.BOARDED,
       identityDoc: `${idPrefix}${idNum}`,
@@ -118,11 +139,11 @@ const generateMockManifest = (flight: Flight): Manifest => {
   return { flightNumber: flight.flightNumber, passengers, crew };
 };
 
-export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose, onSwitchFlight }) => {
+export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose, onSwitchFlight, readOnly = false }) => {
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [activeTab, setActiveTab] = useState<'PAX' | 'CREW'>('PAX');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<PassengerStatus | 'ALL'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<PassengerStatus | 'ALL' | 'MEDICAL'>('ALL');
   const [activeActionId, setActiveActionId] = useState<string | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -145,16 +166,18 @@ export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose,
      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                            p.pnr.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            p.identityDoc.toLowerCase().includes(searchQuery.toLowerCase());
-     const matchesStatus = statusFilter === 'ALL' || p.status === statusFilter;
-     return matchesSearch && matchesStatus;
+     
+     if (statusFilter === 'ALL') return matchesSearch;
+     if (statusFilter === 'MEDICAL') return matchesSearch && (p.medicalInfo !== undefined || p.ssrCodes.includes('WCHR') || p.ssrCodes.includes('MEDA'));
+     
+     return matchesSearch && p.status === statusFilter;
   });
 
   const isArrival = flight.type === 'ARRIVAL';
+  const medicalCount = manifest.passengers.filter(p => p.medicalInfo || p.ssrCodes.includes('WCHR')).length;
+  const checkedInCount = manifest.passengers.filter(p => p.status === PassengerStatus.CHECKED_IN || p.status === PassengerStatus.BOARDED).length;
   const boardedCount = manifest.passengers.filter(p => p.status === PassengerStatus.BOARDED).length;
-  const missingCount = manifest.passengers.filter(p => p.status === PassengerStatus.MISSING).length;
-  const deplanedCount = manifest.passengers.filter(p => p.status === PassengerStatus.DEPLANED).length;
-  const transferCount = manifest.passengers.filter(p => p.status === PassengerStatus.TRANSFER_INTL || p.status === PassengerStatus.TRANSFER_DOMESTIC).length;
-  const attentionCount = manifest.passengers.filter(p => p.status === PassengerStatus.ATTENTION).length;
+  const missingCount = manifest.passengers.filter(p => p.status === PassengerStatus.MISSING || p.status === PassengerStatus.NO_SHOW).length;
 
   const handleAction = (action: string, paxName: string) => {
     console.log(`Executing ${action} for ${paxName}`);
@@ -213,10 +236,13 @@ export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose,
   };
 
   const getFilterOptions = () => {
+      let opts = ['ALL', 'MEDICAL', 'ATTENTION'];
       if (isArrival) {
-          return ['ALL', 'DEPLANED', 'AT_BAG_DROP', 'TRANSFER_DOMESTIC', 'TRANSFER_INTL', 'ATTENTION'];
+          opts = [...opts, 'DEPLANED', 'AT_BAG_DROP', 'TRANSFER_DOMESTIC', 'TRANSFER_INTL'];
+      } else {
+          opts = [...opts, 'BOARDED', 'MISSING', 'CHECKED_IN', 'NO_SHOW'];
       }
-      return ['ALL', 'BOARDED', 'MISSING', 'CHECKED_IN', 'NO_SHOW', 'ATTENTION'];
+      return opts;
   };
 
   return (
@@ -231,29 +257,58 @@ export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose,
                       <Plane className={`w-5 h-5 md:w-6 md:h-6 text-indigo-500 transform ${isArrival ? 'rotate-45' : '-rotate-45'}`} />
                       {flight.airline} {flight.flightNumber}
                    </h2>
+                   {/* OPERATOR & DESTINATION LINE */}
+                   <div className="flex items-center gap-3 text-sm text-slate-400 mt-1">
+                        {readOnly && (
+                            <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-900/20 border border-amber-600/30 rounded text-amber-500 text-xs font-bold">
+                                <Eye className="w-3 h-3" /> READ ONLY ACCESS
+                            </div>
+                        )}
+                        <span className="text-slate-600">|</span>
+                        <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-emerald-500" />
+                            <span>To: <span className="font-bold text-white">{flight.destination}</span></span>
+                        </div>
+                   </div>
                 </div>
                 <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
                    <X className="w-6 h-6" />
                 </button>
              </div>
 
-             {/* STATS BAR (Abbreviated for brevity) */}
-             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+             {/* STATS BAR - 5 COLUMNS */}
+             <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                 <div className="bg-slate-800 p-2 rounded-lg border border-slate-700">
                    <div className="text-[10px] uppercase text-slate-500 font-bold">Total Pax</div>
                    <div className="text-xl font-bold text-white">{manifest.passengers.length}</div>
                 </div>
-                {attentionCount > 0 && (
-                     <div className="bg-red-600 p-2 rounded-lg border border-red-500 animate-pulse">
-                        <div className="text-[10px] uppercase text-white font-bold">ATTENTION</div>
-                        <div className="text-xl font-bold text-white">{attentionCount}</div>
-                     </div>
-                )}
+                
+                <div className={`p-2 rounded-lg border ${medicalCount > 0 ? 'bg-rose-900/20 border-rose-500/30' : 'bg-slate-800 border-slate-700'}`}>
+                   <div className={`text-[10px] uppercase font-bold flex items-center gap-1 ${medicalCount > 0 ? 'text-rose-400' : 'text-slate-500'}`}>
+                      <Stethoscope className="w-3 h-3" /> Medical
+                   </div>
+                   <div className={`text-xl font-bold ${medicalCount > 0 ? 'text-rose-200' : 'text-white'}`}>{medicalCount}</div>
+                </div>
+
+                <div className="bg-slate-800 p-2 rounded-lg border border-slate-700">
+                   <div className="text-[10px] uppercase text-sky-500 font-bold">Checked In</div>
+                   <div className="text-xl font-bold text-sky-200">{checkedInCount}</div>
+                </div>
+
+                <div className="bg-slate-800 p-2 rounded-lg border border-slate-700">
+                   <div className="text-[10px] uppercase text-emerald-500 font-bold">Boarded</div>
+                   <div className="text-xl font-bold text-emerald-200">{boardedCount}</div>
+                </div>
+
+                <div className={`p-2 rounded-lg border ${missingCount > 0 ? 'bg-amber-900/20 border-amber-500/30' : 'bg-slate-800 border-slate-700'}`}>
+                   <div className={`text-[10px] uppercase font-bold ${missingCount > 0 ? 'text-amber-400' : 'text-slate-500'}`}>Missing/No-Show</div>
+                   <div className={`text-xl font-bold ${missingCount > 0 ? 'text-amber-200' : 'text-white'}`}>{missingCount}</div>
+                </div>
              </div>
           </div>
 
           {/* TABS & FILTERS */}
-          <div className="px-4 md:px-6 py-3 border-b border-slate-800 bg-slate-900/95 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sticky top-[140px] z-10">
+          <div className="px-4 md:px-6 py-3 border-b border-slate-800 bg-slate-900/95 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 sticky top-[160px] z-10">
              <div className="flex bg-slate-800 rounded-lg p-1 w-full md:w-auto">
                 <button onClick={() => setActiveTab('PAX')} className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-md transition-all ${activeTab === 'PAX' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}>PASSENGERS</button>
                 <button onClick={() => setActiveTab('CREW')} className={`flex-1 md:flex-none px-4 py-2 text-xs font-bold rounded-md transition-all ${activeTab === 'CREW' ? 'bg-indigo-600 text-white shadow' : 'text-slate-400 hover:text-slate-200'}`}>CREW</button>
@@ -292,11 +347,14 @@ export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose,
                                   key={status}
                                   onClick={() => { setStatusFilter(status as any); setIsFilterOpen(false); }}
                                   className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg uppercase flex items-center justify-between ${
-                                     statusFilter === status ? 'bg-indigo-600 text-white' : 'text-slate-300 hover:bg-slate-700'
+                                     statusFilter === status 
+                                        ? 'bg-indigo-600 text-white' 
+                                        : status === 'MEDICAL' ? 'text-rose-400 hover:bg-slate-700' : 'text-slate-300 hover:bg-slate-700'
                                   }`}
                                 >
                                    {status.replace('_', ' ')}
                                    {statusFilter === status && <CheckCircle2 className="w-3 h-3" />}
+                                   {status === 'MEDICAL' && statusFilter !== 'MEDICAL' && <Stethoscope className="w-3 h-3" />}
                                 </button>
                              ))}
                         </div>
@@ -330,7 +388,9 @@ export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose,
              {activeTab === 'PAX' && (
                 <div className="space-y-2">
                    {filteredPax.map(pax => (
-                      <div key={pax.id} className="group bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 hover:border-indigo-500/50 rounded-lg p-3 md:grid md:grid-cols-12 gap-2 md:gap-4 items-center transition-all relative">
+                      <div key={pax.id} className={`group bg-slate-800/50 hover:bg-slate-800 border hover:border-indigo-500/50 rounded-lg p-3 md:grid md:grid-cols-12 gap-2 md:gap-4 items-center transition-all relative ${
+                          pax.medicalInfo || pax.ssrCodes.includes('WCHR') ? 'border-rose-500/30 bg-rose-900/10' : 'border-slate-700/50'
+                      }`}>
                          {/* Name & Seat */}
                          <div className="col-span-4 flex items-center gap-3">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm ${
@@ -342,10 +402,21 @@ export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose,
                                 <div className="text-sm font-bold text-white flex items-center gap-2">
                                    {pax.name}
                                    {pax.isVip && <Crown className="w-3 h-3 text-amber-400 fill-amber-400" />}
+                                   {pax.ssrCodes.includes('WCHR') && <Accessibility className="w-3 h-3 text-sky-400" />}
+                                   {pax.ssrCodes.includes('PREG') && <Baby className="w-3 h-3 text-pink-400" />}
+                                   {pax.ssrCodes.includes('BLND') && <EyeOff className="w-3 h-3 text-slate-400" />}
+                                   {pax.ssrCodes.includes('DEAF') && <EarOff className="w-3 h-3 text-slate-400" />}
                                 </div>
                                 <div className="text-xs text-slate-500 flex items-center gap-2">
                                    {pax.class} • {pax.pnr}
                                 </div>
+                                {/* MEDICAL ALERT LINE - NOW PROMINENT */}
+                                {pax.medicalInfo && (
+                                    <div className="mt-1 flex items-center gap-1 text-[10px] text-rose-300 font-bold bg-rose-900/40 px-2 py-0.5 rounded w-fit border border-rose-500/30 animate-pulse">
+                                        <Activity className="w-3 h-3" />
+                                        {pax.medicalInfo}
+                                    </div>
+                                )}
                             </div>
                          </div>
 
@@ -356,24 +427,36 @@ export const FlightManifest: React.FC<FlightManifestProps> = ({ flight, onClose,
 
                          {/* Info */}
                          <div className="col-span-3">
-                            <div className="text-xs font-mono text-slate-400">{pax.identityDoc}</div>
+                            <div className="text-xs font-mono text-slate-400 mb-1">{pax.identityDoc}</div>
+                            {/* SSR Tags */}
+                            <div className="flex gap-1 flex-wrap">
+                                {pax.ssrCodes.map(code => (
+                                    <span key={code} className="text-[9px] px-1 bg-slate-700 rounded text-slate-300 border border-slate-600">
+                                        {code}
+                                    </span>
+                                ))}
+                            </div>
                          </div>
 
-                         {/* Actions */}
+                         {/* Actions - HIDDEN IF READ ONLY */}
                          <div className="col-span-2 relative flex justify-end">
-                             <button 
-                               onClick={(e) => { e.stopPropagation(); setActiveActionId(activeActionId === pax.id ? null : pax.id); }}
-                               className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white"
-                             >
-                                <MoreVertical className="w-4 h-4" />
-                             </button>
-                             {activeActionId === pax.id && (
-                                <div className="absolute right-0 top-8 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[60] overflow-hidden animate-in zoom-in-95">
-                                   <div className="p-2 border-b border-slate-700 bg-slate-900/50 text-[10px] font-bold text-slate-500 uppercase">Report Incident</div>
-                                   <button onClick={() => handleAction('PAGE_PASSENGER', pax.name)} className="w-full text-left px-4 py-3 text-xs font-bold text-slate-200 hover:bg-indigo-600/20 hover:text-indigo-400 flex items-center gap-3"><Megaphone className="w-4 h-4" /> Call to Gate</button>
-                                   <button onClick={() => handleAction('MEDICAL_ASSIST', pax.name)} className="w-full text-left px-4 py-3 text-xs font-bold text-slate-200 hover:bg-rose-900/20 hover:text-rose-400 flex items-center gap-3"><Ambulance className="w-4 h-4" /> Medical Assist</button>
-                                   <button onClick={() => handleAction('TRANSPORT_ASSIST', pax.name)} className="w-full text-left px-4 py-3 text-xs font-bold text-slate-200 hover:bg-sky-900/20 hover:text-sky-400 flex items-center gap-3"><Accessibility className="w-4 h-4" /> Wheelchair / Transport</button>
-                                </div>
+                             {!readOnly && (
+                                <>
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setActiveActionId(activeActionId === pax.id ? null : pax.id); }}
+                                        className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-white"
+                                    >
+                                        <MoreVertical className="w-4 h-4" />
+                                    </button>
+                                    {activeActionId === pax.id && (
+                                        <div className="absolute right-0 top-8 w-56 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-[60] overflow-hidden animate-in zoom-in-95">
+                                        <div className="p-2 border-b border-slate-700 bg-slate-900/50 text-[10px] font-bold text-slate-500 uppercase">Report Incident</div>
+                                        <button onClick={() => handleAction('PAGE_PASSENGER', pax.name)} className="w-full text-left px-4 py-3 text-xs font-bold text-slate-200 hover:bg-indigo-600/20 hover:text-indigo-400 flex items-center gap-3"><Megaphone className="w-4 h-4" /> Call to Gate</button>
+                                        <button onClick={() => handleAction('MEDICAL_ASSIST', pax.name)} className="w-full text-left px-4 py-3 text-xs font-bold text-slate-200 hover:bg-rose-900/20 hover:text-rose-400 flex items-center gap-3"><Ambulance className="w-4 h-4" /> Medical Assist</button>
+                                        <button onClick={() => handleAction('TRANSPORT_ASSIST', pax.name)} className="w-full text-left px-4 py-3 text-xs font-bold text-slate-200 hover:bg-sky-900/20 hover:text-sky-400 flex items-center gap-3"><Accessibility className="w-4 h-4" /> Wheelchair / Transport</button>
+                                        </div>
+                                    )}
+                                </>
                              )}
                          </div>
                       </div>
