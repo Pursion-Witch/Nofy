@@ -9,7 +9,8 @@ import { Directory } from './components/Directory';
 import { FlightDashboard } from './components/FlightDashboard';
 import { TaskModule } from './components/TaskModule';
 import { OnboardingTour } from './components/OnboardingTour'; // New Component
-import { LogEntry, ResourceStatus, UserRole, Department, IncidentSeverity, Flight, PatientCase, UserProfile, ChatMessage, Terminal, Agency, ChatChannel } from './types';
+import { FlightManifest } from './components/FlightManifest'; // Import needed for modal state
+import { LogEntry, ResourceStatus, UserRole, Department, IncidentSeverity, Flight, PatientCase, UserProfile, ChatMessage, Terminal, Agency, ChatChannel, AccessLevel } from './types';
 import { LayoutDashboard, Phone, Plane, ClipboardList, AlertOctagon } from 'lucide-react';
 
 const INITIAL_LOGS: LogEntry[] = [
@@ -103,7 +104,7 @@ const INITIAL_FLIGHTS: Flight[] = [
   // --- T1 DOMESTIC ---
   { 
     flightNumber: 'PR 1845', 
-    airline: 'PAL', 
+    airline: 'Philippine Airlines', 
     type: 'DEPARTURE',
     origin: 'CEB',
     destination: 'Manila (MNL)', 
@@ -120,7 +121,7 @@ const INITIAL_FLIGHTS: Flight[] = [
   },
   { 
     flightNumber: 'DG 6022', 
-    airline: 'Cebgo', 
+    airline: 'Cebu Pacific', 
     type: 'ARRIVAL',
     origin: 'Dumaguete (DGT)', 
     destination: 'CEB',
@@ -211,19 +212,19 @@ const INITIAL_FLIGHTS: Flight[] = [
 
 const MOCK_USERS: UserProfile[] = [
   // --- AOCC & IT (Viewable by AOCC) ---
-  { id: 'u2', name: 'Engr. Mark D.', email: 'mark@mcia.ph', role: 'Systems Admin', department: Department.IT_SYSTEMS, status: 'BUSY', allowedTerminals: [Terminal.T1, Terminal.T2] },
-  { id: 'u_it1', name: 'Dev. Jason', email: 'jason@mcia.ph', role: 'Network Engineer', department: Department.IT_SYSTEMS, status: 'ONLINE', allowedTerminals: [Terminal.T1, Terminal.T2] },
-  { id: 'u_it2', name: 'Tech. Sarah', email: 'sarah.it@mcia.ph', role: 'Field Technician', department: Department.IT_SYSTEMS, status: 'BREAK', allowedTerminals: [Terminal.T1, Terminal.T2] },
-  { id: 'u_aocc1', name: 'Ops Commander', email: 'cmd@mcia.ph', role: 'Senior Ops Chief', department: Department.AOCC, status: 'ONLINE', allowedTerminals: [Terminal.T1, Terminal.T2] },
+  { id: 'u2', name: 'Engr. Mark D.', email: 'mark@mcia.ph', role: 'Systems Admin', department: Department.IT_SYSTEMS, status: 'BUSY', allowedTerminals: [Terminal.T1, Terminal.T2], accessLevel: 'ADMIN', employeeId: 'SYS-001' },
+  { id: 'u_it1', name: 'Dev. Jason', email: 'jason@mcia.ph', role: 'Network Engineer', department: Department.IT_SYSTEMS, status: 'ONLINE', allowedTerminals: [Terminal.T1, Terminal.T2], accessLevel: 'ADMIN', employeeId: 'SYS-002' },
+  { id: 'u_it2', name: 'Tech. Sarah', email: 'sarah.it@mcia.ph', role: 'Field Technician', department: Department.IT_SYSTEMS, status: 'BREAK', allowedTerminals: [Terminal.T1, Terminal.T2], accessLevel: 'ADMIN', employeeId: 'SYS-003' },
+  { id: 'u_aocc1', name: 'Ops Commander', email: 'cmd@mcia.ph', role: 'Senior Ops Chief', department: Department.AOCC, status: 'ONLINE', allowedTerminals: [Terminal.T1, Terminal.T2], accessLevel: 'ADMIN', employeeId: 'AOCC-001' },
 
   // --- T1 DOMESTIC STAFF (Viewable by T1 Ops) ---
-  { id: 'u1', name: 'Ops. Sarah L.', email: 'sarah@mcia.ph', role: 'Terminal Manager', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T1] },
-  { id: 'u_t1_1', name: 'Staff. Mike', email: 'mike@mcia.ph', role: 'Flow Coordinator', department: Department.TERMINAL_OPS, status: 'BUSY', allowedTerminals: [Terminal.T1] },
-  { id: 'u_t1_2', name: 'Staff. Jenny', email: 'jenny@mcia.ph', role: 'Pax Assistance', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T1] },
+  { id: 'u1', name: 'Ops. Sarah L.', email: 'sarah@mcia.ph', role: 'Terminal Manager', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T1], accessLevel: 'OPERATOR', employeeId: 'T1-OPS-101' },
+  { id: 'u_t1_1', name: 'Staff. Mike', email: 'mike@mcia.ph', role: 'Flow Coordinator', department: Department.TERMINAL_OPS, status: 'BUSY', allowedTerminals: [Terminal.T1], accessLevel: 'OPERATOR', employeeId: 'T1-OPS-102' },
+  { id: 'u_t1_2', name: 'Staff. Jenny', email: 'jenny@mcia.ph', role: 'Pax Assistance', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T1], accessLevel: 'OPERATOR', employeeId: 'T1-OPS-103' },
 
   // --- T2 INTERNATIONAL STAFF (Viewable by T2 Ops) ---
-  { id: 'u3', name: 'Capt. R. Santos', email: 'santos@mcia.ph', role: 'Security Chief', department: Department.SECURITY, status: 'ONLINE', allowedTerminals: [Terminal.T2] },
-  { id: 'u_t2_1', name: 'Ops. Maria', email: 'maria@mcia.ph', role: 'Duty Manager', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T2] },
+  { id: 'u3', name: 'Capt. R. Santos', email: 'santos@mcia.ph', role: 'Security Chief', department: Department.SECURITY, status: 'ONLINE', allowedTerminals: [Terminal.T2], accessLevel: 'VIEWER', employeeId: 'T2-SEC-001' },
+  { id: 'u_t2_1', name: 'Ops. Maria', email: 'maria@mcia.ph', role: 'Duty Manager', department: Department.TERMINAL_OPS, status: 'ONLINE', allowedTerminals: [Terminal.T2], accessLevel: 'OPERATOR', employeeId: 'T2-OPS-101' },
 ];
 
 const INITIAL_CHANNELS: ChatChannel[] = [
@@ -248,6 +249,9 @@ export default function App() {
   const [logs, setLogs] = useState<LogEntry[]>(INITIAL_LOGS);
   const [flights, setFlights] = useState<Flight[]>(INITIAL_FLIGHTS);
   
+  // Modal for specific Flight Manifest (triggered from AOCC Dash)
+  const [forcedManifestFlight, setForcedManifestFlight] = useState<Flight | null>(null);
+
   // CHAT STATE
   const [channels, setChannels] = useState<ChatChannel[]>(INITIAL_CHANNELS);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -262,7 +266,7 @@ export default function App() {
   };
 
   // Stage 2: Profile Setup / Role Selection
-  const handleProfileSetup = (role: UserRole, dept: Department, name: string, allowedTerminals: Terminal[]) => {
+  const handleProfileSetup = (role: UserRole, dept: Department, name: string, allowedTerminals: Terminal[], accessLevel: AccessLevel, employeeId: string, airline?: string) => {
     if (!tempAuthData) return;
 
     setUser({
@@ -272,7 +276,10 @@ export default function App() {
       role: role,
       department: dept,
       status: 'ONLINE',
-      allowedTerminals
+      allowedTerminals,
+      accessLevel,
+      employeeId,
+      airline
     });
     
     // Auto-set terminal
@@ -283,7 +290,7 @@ export default function App() {
     }
 
     if (!MOCK_USERS.find(u => u.name === name)) {
-       MOCK_USERS.push({ id: 'current-user', name, email: tempAuthData.email, role, department: dept, status: 'ONLINE', allowedTerminals });
+       MOCK_USERS.push({ id: 'current-user', name, email: tempAuthData.email, role, department: dept, status: 'ONLINE', allowedTerminals, accessLevel, employeeId, airline });
     }
 
     setAuthState('APP');
@@ -345,6 +352,38 @@ export default function App() {
      }
   };
 
+  // AOCC / AIRLINE ACTIONS
+  const handleRequestManifest = (flightNum: string) => {
+      handleNewLog({
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          message: `[AOCC REQUEST] Update manifest for ${flightNum}`,
+          category: 'AIRLINE_REQ',
+          severity: IncidentSeverity.LOW,
+          originDept: Department.AOCC,
+          targetDept: [Department.AIRLINE_OPS],
+          agenciesInvolved: [],
+          terminal: currentTerminal
+      });
+      alert(`Request sent to airline for ${flightNum}`);
+  };
+
+  const handleSendAlert = (msg: string, severity: IncidentSeverity) => {
+      if(!user) return;
+      handleNewLog({
+          id: Date.now().toString(),
+          timestamp: new Date(),
+          message: msg,
+          category: 'OPERATIONAL',
+          severity: severity,
+          originDept: user.department,
+          targetDept: [Department.AOCC],
+          agenciesInvolved: [],
+          terminal: currentTerminal,
+          relatedAirline: user.airline
+      });
+  };
+
   // --- RENDER LOGIC ---
 
   if (authState === 'AUTH') {
@@ -366,6 +405,12 @@ export default function App() {
   // DATA FILTERS
   const visibleLogs = logs.filter(log => {
       if (!log.terminal) return true;
+      // Filter airline specific logs if user is airline ops
+      if (user.department === Department.AIRLINE_OPS) {
+          if (log.category === 'AIRLINE_REQ' || log.relatedAirline === user.airline) return true;
+          // Only show generic terminal logs, hide other airlines
+          if (log.relatedAirline && log.relatedAirline !== user.airline) return false;
+      }
       return log.terminal === currentTerminal;
   });
 
@@ -375,14 +420,27 @@ export default function App() {
     : null;
 
   let flightDataForDashboard = flights;
-  if (user.allowedTerminals.length === 1) {
+  
+  // PRIVACY FILTER: Airlines only see their own flights in main dashboard
+  if (user.department === Department.AIRLINE_OPS && user.airline) {
+      flightDataForDashboard = flights.filter(f => f.airline === user.airline);
+  } else if (user.allowedTerminals.length === 1) {
       flightDataForDashboard = flights.filter(f => f.terminal === user.allowedTerminals[0]);
   }
 
   return (
     <>
-      {showOnboarding && <OnboardingTour onComplete={() => setShowOnboarding(false)} />}
+      {showOnboarding && <OnboardingTour onComplete={() => setShowOnboarding(false)} userDept={user.department} />}
       
+      {/* GLOBAL MODAL FOR MANIFEST FROM AOCC DASH */}
+      {forcedManifestFlight && (
+          <FlightManifest 
+             flight={forcedManifestFlight} 
+             onClose={() => setForcedManifestFlight(null)} 
+             readOnly={user.accessLevel === 'VIEWER'}
+          />
+      )}
+
       <Layout 
         user={user} 
         currentTerminal={currentTerminal}
@@ -408,6 +466,7 @@ export default function App() {
                   userName={user.name}
                   currentTerminal={currentTerminal}
                   onNewLog={handleNewLog}
+                  onBack={() => setActiveTab('tasks')}
                 />
              </div>
           )}
@@ -416,7 +475,19 @@ export default function App() {
           {activeTab === 'dash' && (
              <div className="animate-in fade-in zoom-in-95 duration-200">
                <h2 className="text-xl font-bold text-slate-200 mb-4 px-2">Unified Command Center</h2>
-               <StrategicOverview userDept={user.department} />
+               <StrategicOverview 
+                 userDept={user.department} 
+                 flights={flights} // Pass all flights to strategic view, internal components handle filtering/privacy if needed
+                 logs={visibleLogs}
+                 currentUser={user}
+                 onSendAlert={handleSendAlert}
+                 onRequestManifest={handleRequestManifest}
+                 onShowManifest={(f) => {
+                    // Close AOCC dash/Redirect flow
+                    setActiveTab('flights');
+                    setForcedManifestFlight(f);
+                 }}
+               />
              </div>
           )}
 
@@ -434,6 +505,7 @@ export default function App() {
                     flights={flightDataForDashboard} 
                     currentTerminal={currentTerminal}
                     userRole={user.department} 
+                    currentUser={user}
                 />
              </div>
           )}
