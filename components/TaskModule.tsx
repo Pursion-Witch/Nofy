@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, CheckSquare, Plus, Trash2, X } from 'lucide-react';
 import { LiveLog } from './LiveLog';
 import { LogEntry, Task } from '../types';
-import { api } from '../services/api';
+import { api } from '../virtualBackend';
 
 interface TaskModuleProps {
   logs: LogEntry[];
@@ -21,7 +20,6 @@ export const TaskModule: React.FC<TaskModuleProps> = ({ logs }) => {
 
   useEffect(() => {
     fetchTasks();
-    // Subscribe to backend events to refresh task list
     return api.subscribe((event) => {
       if (['TASK_UPDATED', 'TASK_ADDED', 'TASK_DELETED'].includes(event.type)) {
         fetchTasks();
