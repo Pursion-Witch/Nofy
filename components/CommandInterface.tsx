@@ -40,21 +40,45 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
     try {
       const result = await processCommandInput(rawLogText, role, department);
       
+      // If the model called a tool (Preferred)
       if (result.toolCalls && result.toolCalls.length > 0) {
         const tool = result.toolCalls[0];
         const args = tool.args as any;
 
-        const severity = args.severity || (args.intensityLevel === 'BLUE' ? IncidentSeverity.LOW : IncidentSeverity.HIGH);
+        const severity = args.severity as IncidentSeverity || (args.intensityLevel === 'BLUE' ? IncidentSeverity.LOW : IncidentSeverity.HIGH);
         const tier = args.intensityLevel || (['CRITICAL', 'URGENT'].includes(severity) ? 'RED' : severity === 'HIGH' ? 'ORANGE' : 'BLUE');
 
         setAiPreview({
-          translation: args.translatedMessage || "Translation failed. Using raw input.",
+          translation: args.translatedMessage || result.text || "Translation failed.",
           severity: severity,
           tier: tier as any,
           depts: args.targetDepts || [Department.AOCC]
         });
-      } else {
-        // Fallback simple logic
+      } 
+      // Fallback: If model returned text but NO tool call
+      else if (result.text) {
+        // Heuristic detection since tool call failed
+        const textLower = result.text.toLowerCase();
+        let tier: 'RED' | 'ORANGE' | 'BLUE' = 'BLUE';
+        let severity = IncidentSeverity.LOW;
+
+        if (textLower.includes('fire') || textLower.includes('medical') || textLower.includes('emergency')) {
+            tier = 'RED';
+            severity = IncidentSeverity.CRITICAL;
+        } else if (textLower.includes('broken') || textLower.includes('queue') || textLower.includes('high')) {
+            tier = 'ORANGE';
+            severity = IncidentSeverity.HIGH;
+        }
+
+        setAiPreview({
+          translation: result.text,
+          severity: severity,
+          tier: tier,
+          depts: [Department.AOCC, department]
+        });
+      }
+      else {
+        // Ultimate fallback
         setAiPreview({
           translation: rawLogText,
           severity: IncidentSeverity.LOW,
@@ -63,8 +87,8 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
         });
       }
     } catch (e) {
-      console.error(e);
-      alert("AI Neural Link timed out.");
+      console.error("AI Error:", e);
+      alert("AI Neural Link timed out or failed to parse.");
     } finally {
       setIsProcessing(false);
     }
