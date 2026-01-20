@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from './components/Layout';
 import { LoginScreen } from './components/LoginScreen';
@@ -10,7 +9,7 @@ import { FlightDashboard } from './components/FlightDashboard';
 import { TaskModule } from './components/TaskModule';
 import { OnboardingTour } from './components/OnboardingTour'; 
 import { FlightManifest } from './components/FlightManifest';
-import { api } from './services/api';
+import { api } from './virtualBackend';
 import { LogEntry, UserRole, Department, IncidentSeverity, Flight, UserProfile, ChatMessage, Terminal, ChatChannel, AccessLevel } from './types';
 import { LayoutDashboard, Phone, Plane, ClipboardList, AlertOctagon } from 'lucide-react';
 
@@ -52,7 +51,7 @@ export default function App() {
 
   useEffect(() => {
     fetchData();
-    // Subscribe to backend changes (Events like LOG_ADDED trigger a refresh)
+    // Subscribe to backend changes
     return api.subscribe(() => fetchData());
   }, []);
 
