@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   X, Plane, CheckCircle2, Upload, AlertTriangle, 
@@ -6,7 +5,7 @@ import {
   Luggage, ClipboardList, Send, Info, Menu
 } from 'lucide-react';
 import { UserProfile, Flight, IncidentSeverity } from '../types';
-import { processCommandInput } from '../services/geminiService';
+import { processCommandInput } from '../geminiEngine';
 
 interface AirlineOpsDashboardProps {
   user: UserProfile;
