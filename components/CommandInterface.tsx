@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Send, Loader2, PackageX, HeartPulse, CheckSquare, AlertTriangle, Users, FileText, ToggleLeft, ToggleRight, Sparkles, Clipboard, Camera, ArrowLeft } from 'lucide-react';
 import { LogEntry, IncidentSeverity, Department, UserRole, Terminal } from '../types';
-import { processCommandInput } from '../services/geminiService';
+import { processCommandInput } from '../geminiEngine';
 
 interface CommandInterfaceProps {
   role: UserRole;
@@ -106,7 +105,6 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
             targetDept: [Department.AOCC],
             agenciesInvolved: [],
             terminal: currentTerminal,
-            // Removed aiAnalysis field as requested
         };
 
         onNewLog(newLog);
