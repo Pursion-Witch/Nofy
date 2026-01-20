@@ -5,14 +5,22 @@ import { Agency, IncidentSeverity, StrategicPillar, Department } from "./types";
 
 const broadcastAlertTool: FunctionDeclaration = {
   name: "broadcastAlert",
-  description: "Broadcasts a CRITICAL, URGENT, or HIGH severity incident. RED or ORANGE alert.",
+  description: "REQUIRED for RED or ORANGE tier incidents. Use for anything dangerous, urgent, or high-impact.",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      severity: { type: Type.STRING, enum: Object.values(IncidentSeverity) },
-      translatedMessage: { type: Type.STRING, description: "The message translated to professional ENGLISH." },
-      originalLanguage: { type: Type.STRING, description: "The detected source language (Tagalog, Visayan, etc)." },
-      intensityLevel: { type: Type.STRING, enum: ['RED', 'ORANGE'], description: "RED for Critical/Urgent, ORANGE for High." },
+      severity: { 
+        type: Type.STRING, 
+        enum: Object.values(IncidentSeverity),
+        description: "CRITICAL or URGENT for RED, HIGH for ORANGE."
+      },
+      translatedMessage: { type: Type.STRING, description: "The message strictly translated to professional aviation ENGLISH." },
+      originalLanguage: { type: Type.STRING, description: "Detected source: e.g., 'Cebuano', 'Tagalog', 'English'." },
+      intensityLevel: { 
+        type: Type.STRING, 
+        enum: ['RED', 'ORANGE'], 
+        description: "RED: Life safety/Security/Fire. ORANGE: Major ops disruption/Equipment failure." 
+      },
       targetDepts: { type: Type.ARRAY, items: { type: Type.STRING, enum: Object.values(Department) } }
     },
     required: ["severity", "translatedMessage", "intensityLevel", "targetDepts"],
@@ -21,11 +29,11 @@ const broadcastAlertTool: FunctionDeclaration = {
 
 const relayMessageTool: FunctionDeclaration = {
   name: "relayMessage",
-  description: "Routes standard operational info. BLUE alert tier.",
+  description: "REQUIRED for BLUE tier incidents. Use for standard updates, maintenance, or minor issues.",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      translatedMessage: { type: Type.STRING, description: "The message translated to professional ENGLISH." },
+      translatedMessage: { type: Type.STRING, description: "The message strictly translated to professional aviation ENGLISH." },
       intensityLevel: { type: Type.STRING, enum: ['BLUE'], description: "Standard operational tier." },
       targetDepts: { type: Type.ARRAY, items: { type: Type.STRING, enum: Object.values(Department) } }
     },
@@ -38,37 +46,42 @@ const relayMessageTool: FunctionDeclaration = {
 export const processCommandInput = async (input: string, userRole: string, userDept: string) => {
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
 
+  // Upgraded to Pro for more reliable trilingual translation and tool calling
+  const modelName = 'gemini-3-pro-preview';
+
   const systemInstruction = `
     You are the "NOFY Neural Relay" for Mactan-Cebu International Airport (MCIA).
+    Your absolute priority is to take airport operational reports and process them into the command system.
     
-    TASK:
-    1. SOURCE: Input is in Tagalog, Visayan (Cebuano), or English.
-    2. TRANSLATION: Always translate to formal aviation-standard ENGLISH.
-    3. SEVERITY MAPPING:
-       - RED (CRITICAL/URGENT): Fire, Medical Emergency, Bomb Threat, Unattended Bag, Active Fight.
-       - ORANGE (HIGH): Major Queue (>20 mins), Equipment Failure (PBB/Conveyor), Security Breach (Non-violent).
-       - BLUE (MEDIUM/LOW): Routine maintenance, general queries, minor spills, staff check-ins.
+    CORE RULES:
+    1. DO NOT RESPOND WITH TEXT. You MUST call either 'broadcastAlert' or 'relayMessage'.
+    2. TRANSLATION: You must translate Tagalog, Visayan (Cebuano), or informal English into formal, clear Aviation English.
+    3. SEVERITY TO COLOR MAPPING:
+       - RED (CRITICAL/URGENT): Fire (Sunog), Medical (Sakit), Bomb, Unattended Bag, Violence, Active Breach.
+       - ORANGE (HIGH): Major Queues (>20m), Broken Equipment (PBB, Conveyor), Large Spill, Missing Staff.
+       - BLUE (MEDIUM/LOW): General updates, routine checks, minor maintenance, shift reports.
     
-    4. RESPONSE: Call 'broadcastAlert' for RED/ORANGE or 'relayMessage' for BLUE.
+    If the user input is in Visayan like "Naay gubot sa gate 5", you translate to "Disorderly conduct reported at Gate 5" and call 'broadcastAlert' with intensityLevel='RED'.
     
-    User Context: ${userRole} in ${userDept}.
+    User Context: ${userRole} working in ${userDept}.
   `;
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: modelName,
       contents: input,
       config: {
         systemInstruction,
         tools: [{ functionDeclarations: [broadcastAlertTool, relayMessageTool] }],
+        // Pro models benefit from a higher thinking budget for complex translation/classification
+        thinkingConfig: { thinkingBudget: 2000 }
       }
     });
 
     const toolCalls = response.functionCalls || [];
-    return { 
-      text: response.text || "", 
-      toolCalls 
-    };
+    const text = response.text || "";
+
+    return { text, toolCalls };
 
   } catch (error) {
     console.error("Gemini Engine Failure:", error);
