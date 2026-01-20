@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
-import { LogOut, Plane, RadioTower, Menu, X, User, Search, AlertTriangle, Lock, Users, ChevronDown, BellRing, Activity, Clock, Coffee, Shield, MessageSquare } from 'lucide-react';
+import { LogOut, Plane, RadioTower, Menu, X, User, Search, AlertTriangle, Lock, Users, ChevronDown, BellRing, Activity, Clock, Coffee, Shield, MessageSquare, Presentation } from 'lucide-react';
 import { UserProfile, ChatMessage, Terminal, LogEntry, IncidentSeverity, ChatChannel } from '../types';
 import { StaffRoster } from './StaffRoster';
 import { ChatInterface } from './ChatInterface';
+import { PitchMode } from './PitchMode';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,7 +19,7 @@ interface LayoutProps {
   mockUsers: UserProfile[];
   onStatusChange?: (status: string) => void; 
   latestCriticalLog?: LogEntry | null; 
-  isTourActive?: boolean; // New prop to suppress popups
+  isTourActive?: boolean; 
 }
 
 const NofyLogo = () => (
@@ -45,12 +45,12 @@ export const Layout: React.FC<LayoutProps> = ({
   const [alertsExpanded, setAlertsExpanded] = useState(false);
   const [showCriticalPopup, setShowCriticalPopup] = useState(false);
   const [showFullChat, setShowFullChat] = useState(false);
+  const [showPitchMode, setShowPitchMode] = useState(false);
 
   const canSwitchTerminal = user.allowedTerminals.length > 1;
   const unreadCount = chatChannels.reduce((acc, ch) => acc + (ch.unreadCount || 0), 0);
 
   useEffect(() => {
-    // Only trigger critical popup if a log exists AND the tour is NOT active
     if (latestCriticalLog && !isTourActive) {
       setShowCriticalPopup(true);
       const timer = setTimeout(() => setShowCriticalPopup(false), 8000);
@@ -61,6 +61,10 @@ export const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 font-sans overflow-x-hidden">
       
+      {/* PITCH MODE OVERLAY */}
+      {showPitchMode && <PitchMode onClose={() => setShowPitchMode(false)} />}
+
+      {/* CRITICAL INCIDENT POPUP */}
       {showCriticalPopup && latestCriticalLog && !isTourActive && (
         <div className="fixed inset-x-0 top-0 h-[50vh] z-[100] bg-rose-950/95 backdrop-blur-md border-b-4 border-rose-500 shadow-2xl animate-in slide-in-from-top duration-500 flex flex-col items-center justify-center p-6 text-center">
             <div className="w-20 h-20 rounded-full bg-rose-600 animate-pulse flex items-center justify-center mb-4 shadow-[0_0_30px_rgba(225,29,72,0.6)]">
@@ -83,6 +87,7 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       )}
 
+      {/* FULL SCREEN CHAT OVERLAY */}
       {showFullChat && (
         <ChatInterface 
           currentUser={user}
@@ -95,6 +100,7 @@ export const Layout: React.FC<LayoutProps> = ({
         />
       )}
 
+      {/* HEADER BAR */}
       <div className="sticky top-0 z-50 bg-slate-900 shadow-xl">
         <div className={`border-b border-slate-800 relative transition-all duration-300 bg-slate-950 ${alertsExpanded ? 'h-auto py-4' : 'h-8 py-1 overflow-hidden'}`}>
            <div className="max-w-7xl mx-auto px-4 flex justify-between items-start">
@@ -215,6 +221,19 @@ export const Layout: React.FC<LayoutProps> = ({
                           </div>
                           <button onClick={onLogout} className="mt-6 w-full py-2 bg-rose-900/20 hover:bg-rose-900/40 text-rose-300 text-xs font-bold rounded-lg border border-rose-900/50 flex items-center justify-center gap-2 transition-colors"><LogOut className="w-3 h-3" /> End Shift</button>
                        </div>
+
+                       {/* PITCH MODE TRIGGER */}
+                       <button 
+                          onClick={() => {
+                              setShowPitchMode(true);
+                              setIsMenuOpen(false);
+                          }}
+                          className="w-full py-3 bg-gradient-to-r from-purple-900/40 to-indigo-900/40 border border-purple-500/30 rounded-xl flex items-center justify-center gap-2 text-purple-300 font-bold hover:brightness-110 transition-all group"
+                       >
+                          <Presentation className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                          Launch Pitch Script
+                       </button>
+
                        <div>
                           <h4 className="text-xs font-bold text-slate-500 uppercase mb-3 flex items-center gap-2"><Search className="w-3 h-3" /> Department Directory</h4>
                           <div className="space-y-2">
