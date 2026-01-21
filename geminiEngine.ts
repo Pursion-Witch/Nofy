@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { Agency, IncidentSeverity, StrategicPillar, Department } from "./types";
 
