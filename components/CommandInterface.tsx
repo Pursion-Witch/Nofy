@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Send, Loader2, PackageX, HeartPulse, CheckSquare, AlertTriangle, Users, Sparkles, Clipboard, ArrowLeft, Languages, Activity } from 'lucide-react';
 import { LogEntry, IncidentSeverity, Department, UserRole, Terminal } from '../types';
