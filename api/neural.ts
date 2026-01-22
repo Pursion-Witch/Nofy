@@ -1,11 +1,9 @@
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { IncidentSeverity, Department } from "../types.js";
 
-// --- TOOLS ---
-// Using Type.OBJECT and Type.STRING from the SDK to satisfy TypeScript
 const broadcastAlertTool: FunctionDeclaration = {
   name: "broadcastAlert",
-  description: "REQUIRED for RED or ORANGE tier incidents. Use for anything dangerous, urgent, or high-impact.",
+  description: "REQUIRED for RED or ORANGE tier incidents.",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -50,8 +48,9 @@ export default async function handler(req: any, res: any) {
 
   try {
     if (action === "processCommand") {
+      // Switched to gemini-1.5-flash for better availability
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-pro",
+        model: "gemini-1.5-flash",
         contents: [{ role: "user", parts: [{ text: input }] }],
         config: {
           systemInstruction: `You are the "NOFY Neural Relay" for Mactan-Cebu International Airport. User Context: ${userRole} in ${userDept}. Translate Cebuano/Tagalog to aviation English.`,
