@@ -286,7 +286,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
                             value={selectedAirline}
                             onChange={(e) => setSelectedAirline(e.target.value)}
                             required
-                            className="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
                         >
                             <option value="">-- Choose Airline --</option>
                             {AIRLINES.map(air => (
@@ -305,7 +305,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
                         onChange={(e) => setSelectedRole(e.target.value)}
                         required
                         autoFocus
-                        className="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                     />
                   </div>
 
@@ -317,7 +317,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-600 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -335,6 +335,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
 
           </div>
         </div>
+
+        <div className="mt-8 text-center flex flex-col items-center gap-1.5">
+            <p className="text-xs text-slate-500 font-medium">Authorized Personnel Only • MCIA Operations</p>
+            <div className="flex items-center gap-2 opacity-40">
+                <div className="h-px w-4 bg-slate-700"></div>
+                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Build v0.63 (Prototype)</p>
+                <div className="h-px w-4 bg-slate-700"></div>
+            </div>
+        </div>
+
       </div>
     </div>
   );

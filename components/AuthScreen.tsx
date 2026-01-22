@@ -172,8 +172,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             </button>
         </div>
 
-        <div className="mt-8 text-center">
-            <p className="text-xs text-slate-500">Authorized Personnel Only • MCIA Operations</p>
+        <div className="mt-8 text-center flex flex-col items-center gap-1.5">
+            <p className="text-xs text-slate-500 font-medium">Authorized Personnel Only • MCIA Operations</p>
+            <div className="flex items-center gap-2 opacity-40">
+                <div className="h-px w-4 bg-slate-700"></div>
+                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Build v0.63 (Prototype)</p>
+                <div className="h-px w-4 bg-slate-700"></div>
+            </div>
         </div>
       </div>
     </div>

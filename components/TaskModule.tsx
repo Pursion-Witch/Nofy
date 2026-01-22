@@ -1,15 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { ClipboardList, CheckSquare, Plus, Trash2, X } from 'lucide-react';
 import { LiveLog } from './LiveLog';
-import { LogEntry, Task } from '../types';
+import { LogEntry, Task, UserProfile } from '../types';
 import { api } from '../virtualBackend';
 
 interface TaskModuleProps {
   logs: LogEntry[];
+  user: UserProfile;
 }
 
-export const TaskModule: React.FC<TaskModuleProps> = ({ logs }) => {
+export const TaskModule: React.FC<TaskModuleProps> = ({ logs, user }) => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [newTask, setNewTask] = useState({ title: '', time: '' });
@@ -148,7 +148,7 @@ export const TaskModule: React.FC<TaskModuleProps> = ({ logs }) => {
        </div>
 
        <div className="flex-grow min-h-0">
-          <LiveLog logs={logs} />
+          <LiveLog logs={logs} currentUser={user} />
        </div>
     </div>
   );

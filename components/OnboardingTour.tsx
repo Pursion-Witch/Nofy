@@ -104,7 +104,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete, user
     {
       id: 10,
       title: "Team Chat",
-      description: "Finally, stay connected. Tap the Chat icon to open your messages.",
+      description: "Finally, stay connected. Tap the Chat icon in the header to open your messages.",
       icon: <MessageSquare className="w-5 h-5 text-indigo-400" />,
       activeTab: 'directory',
       targetId: 'header-chat',
@@ -168,7 +168,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete, user
   }, [stepIndex, currentStep]);
 
   const handleAdvance = () => {
-      if (currentStep.isNavigation && currentStep.targetId) {
+      if (currentStep.targetId) {
           const el = document.getElementById(currentStep.targetId);
           if (el) el.click();
       }
@@ -191,7 +191,7 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete, user
   return (
     <div className="fixed inset-0 z-[200] overflow-hidden pointer-events-none">
       
-      {/* HIGHLIGHTER (The "Hole") - Pointer events auto to allow clicking the target */}
+      {/* HIGHLIGHTER (The "Hole") - Interaction limited solely to the highlight area */}
       {highlightRect && (
           <div 
             onClick={handleAdvance}
@@ -201,15 +201,20 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete, user
                 left: highlightRect.left,
                 width: highlightRect.width,
                 height: highlightRect.height,
-                boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.4)', 
+                boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.75)', 
                 borderRadius: '12px',
-                border: '2px solid rgba(129, 140, 248, 0.8)'
+                border: '2px solid rgba(129, 140, 248, 0.9)'
             }}
           >
           </div>
       )}
 
-      {/* EXPLANATION CARD - Opaque for clarity, positioned dynamically */}
+      {/* FULL-SCREEN LOCK (Used when no highlight exists, like last step) */}
+      {!highlightRect && (
+          <div className="absolute inset-0 bg-slate-950/75 pointer-events-auto" />
+      )}
+
+      {/* EXPLANATION CARD - Dynamic position relative to highlight */}
       <div 
         className={`absolute left-0 right-0 flex justify-center z-[230] transition-all duration-500 ${
             cardPosition === 'top' ? 'top-20' : 'bottom-24'
@@ -248,15 +253,28 @@ export const OnboardingTour: React.FC<OnboardingTourProps> = ({ onComplete, user
                  ></div>
              </div>
 
-             {/* Finish Button (Only on last step) */}
-             {stepIndex === steps.length - 1 && (
-                 <button 
-                    onClick={onComplete}
-                    className="mt-2 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all border border-emerald-400/20 animate-pulse"
-                 >
-                    <CheckCircle2 className="w-5 h-5" /> Start Shift
-                 </button>
-             )}
+             {/* Footer Buttons */}
+             <div className="flex gap-2 mt-1">
+                 {/* Only show advance button if there's no targetId (informational steps) */}
+                 {!currentStep.targetId && stepIndex < steps.length - 1 && (
+                     <button 
+                        onClick={handleAdvance}
+                        className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl transition-all"
+                     >
+                        Continue
+                     </button>
+                 )}
+
+                 {/* Finish Button (Only on last step) */}
+                 {stepIndex === steps.length - 1 && (
+                     <button 
+                        onClick={onComplete}
+                        className="mt-1 w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all border border-emerald-400/20 animate-pulse"
+                     >
+                        <CheckCircle2 className="w-5 h-5" /> Start Shift
+                     </button>
+                 )}
+             </div>
          </div>
       </div>
 
