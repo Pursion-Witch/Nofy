@@ -3,7 +3,7 @@ import { IncidentSeverity, Department } from "../types.js";
 
 const broadcastAlertTool: FunctionDeclaration = {
   name: "broadcastAlert",
-  description: "REQUIRED for RED or ORANGE tier incidents.",
+  description: "REQUIRED for RED or ORANGE tier incidents. Use for anything dangerous, urgent, or high-impact.",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -44,13 +44,14 @@ export default async function handler(req: any, res: any) {
   if (!apiKey) return res.status(500).json({ error: "API_KEY missing" });
 
   const { input, userRole, userDept, action } = req.body;
+  // Initialize SDK
   const ai = new GoogleGenAI({ apiKey });
 
   try {
     if (action === "processCommand") {
-      // Switched to gemini-1.5-flash for better availability
+      // Using gemini-2.0-flash which is the standard for v1beta requests
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.0-flash",
         contents: [{ role: "user", parts: [{ text: input }] }],
         config: {
           systemInstruction: `You are the "NOFY Neural Relay" for Mactan-Cebu International Airport. User Context: ${userRole} in ${userDept}. Translate Cebuano/Tagalog to aviation English.`,
@@ -67,7 +68,7 @@ export default async function handler(req: any, res: any) {
     if (action === "summary") {
       const { type, loc, desc } = req.body;
       const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.0-flash",
         contents: `Incident Type: ${type}\nLocation: ${loc}\nDescription: ${desc}\n\nRules: Max 20 words, Professional aviation tone.`,
       });
       return res.json({ text: response.text?.trim() ?? "" });
