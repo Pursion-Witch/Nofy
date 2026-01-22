@@ -2,8 +2,6 @@
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { Agency, IncidentSeverity, StrategicPillar, Department } from "../types";
 
-const apiKey = process.env.API_KEY || '';
-
 // --- TOOLS ---
 
 const broadcastAlertTool: FunctionDeclaration = {
@@ -68,7 +66,8 @@ const accessPassengerRecordTool: FunctionDeclaration = {
 // --- MAIN PROCESSOR ---
 
 export const processCommandInput = async (input: string, userRole: string, userDept: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Use strictly from process.env.API_KEY per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   const systemInstruction = `
     You are the "NOFY Relay Engine" for MCIA (Mactan-Cebu International Airport).
@@ -94,7 +93,7 @@ export const processCommandInput = async (input: string, userRole: string, userD
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3-flash-preview',
       contents: input,
       config: {
         systemInstruction,
@@ -114,7 +113,8 @@ export const processCommandInput = async (input: string, userRole: string, userD
 };
 
 export const generateUIConcept = async () => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Use strictly from process.env.API_KEY per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   
   const prompt = `A high-fidelity, professional 4K user interface design for an airport operations command center named NOFY at Mactan-Cebu International Airport (MCIA). 
   The interface is in Dark Mode with deep slate backgrounds, accented with neon indigo, emerald green, and amber highlights. 
