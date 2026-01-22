@@ -1,117 +1,75 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
+import { GoogleGenAI, Type, SchemaType } from "@google/genai"; // Changed Type import
 import { IncidentSeverity, Department } from "../types.js";
 
 // --- TOOLS ---
-const broadcastAlertTool: FunctionDeclaration = {
+const broadcastAlertTool = {
   name: "broadcastAlert",
-  description: "REQUIRED for RED or ORANGE tier incidents. Use for anything dangerous, urgent, or high-impact.",
+  description: "REQUIRED for RED or ORANGE tier incidents.",
   parameters: {
-    type: Type.OBJECT,
+    type: SchemaType.OBJECT,
     properties: {
-      severity: { type: Type.STRING, enum: Object.values(IncidentSeverity) },
-      translatedMessage: { type: Type.STRING },
-      originalLanguage: { type: Type.STRING },
-      intensityLevel: { type: Type.STRING, enum: ["RED", "ORANGE"] },
-      targetDepts: { type: Type.ARRAY, items: { type: Type.STRING, enum: Object.values(Department) } },
+      severity: { type: SchemaType.STRING, enum: Object.values(IncidentSeverity) },
+      translatedMessage: { type: SchemaType.STRING },
+      originalLanguage: { type: SchemaType.STRING },
+      intensityLevel: { type: SchemaType.STRING, enum: ["RED", "ORANGE"] },
+      targetDepts: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING, enum: Object.values(Department) } },
     },
     required: ["severity", "translatedMessage", "intensityLevel", "targetDepts"],
   },
 };
 
-const relayMessageTool: FunctionDeclaration = {
+const relayMessageTool = {
   name: "relayMessage",
   description: "REQUIRED for BLUE tier incidents.",
   parameters: {
-    type: Type.OBJECT,
+    type: SchemaType.OBJECT,
     properties: {
-      translatedMessage: { type: Type.STRING },
-      intensityLevel: { type: Type.STRING, enum: ["BLUE"] },
-      targetDepts: { type: Type.ARRAY, items: { type: Type.STRING, enum: Object.values(Department) } },
+      translatedMessage: { type: SchemaType.STRING },
+      intensityLevel: { type: SchemaType.STRING, enum: ["BLUE"] },
+      targetDepts: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING, enum: Object.values(Department) } },
     },
     required: ["translatedMessage", "intensityLevel", "targetDepts"],
   },
 };
 
-// --- API HANDLER ---
 export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
 
-  // Check API key exists
   const apiKey = process.env.API_KEY;
-  if (!apiKey) {
-    console.error("Missing API_KEY environment variable");
-    return res.status(500).json({ error: "Server configuration error: API_KEY missing" });
-  }
+  if (!apiKey) return res.status(500).json({ error: "API_KEY missing" });
 
   const { input, userRole, userDept, action } = req.body;
-
-  const ai = new GoogleGenAI({ apiKey });
+  const genAI = new GoogleGenAI(apiKey);
 
   try {
     if (action === "processCommand") {
-      const response = await ai.models.generateContent({
+      // Use 1.5 Pro for complex Tool Calling
+      const model = genAI.getGenerativeModel({ 
         model: "gemini-1.5-pro",
-        contents: input,
-        config: {
-          systemInstruction: `
-You are the "NOFY Neural Relay" for Mactan-Cebu International Airport (MCIA).
+        systemInstruction: `You are the "NOFY Neural Relay" for Mactan-Cebu International Airport. User: ${userRole} in ${userDept}. Translate Cebuano/Tagalog to aviation English. Call tools.`
+      }, { tools: [{ functionDeclarations: [broadcastAlertTool, relayMessageTool] }] });
 
-Rules:
-- DO NOT respond with text
-- You MUST call broadcastAlert or relayMessage
-- Translate Cebuano/Tagalog to aviation English
-
-User Context: ${userRole} working in ${userDept}
-`,
-          tools: [{ functionDeclarations: [broadcastAlertTool, relayMessageTool] }],
-        },
-      });
+      const result = await model.generateContent(input);
+      const response = result.response;
 
       return res.json({
-        text: response.text ?? "",
-        toolCalls: response.functionCalls ?? [],
+        text: response.text() || "",
+        toolCalls: response.functionCalls() || [],
       });
     }
 
     if (action === "summary") {
-      const { type, loc, desc } = req.body;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: `
-Incident Type: ${type}
-Location: ${loc}
-Description: ${desc}
-
-Rules:
-- Max 20 words
-- Professional aviation tone
-`,
-      });
-
-      return res.json({ text: response.text?.trim() ?? "" });
-    }
-
-    if (action === "uiConcept") {
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: { parts: [{ text: "Futuristic airport command center UI, dark mode, 4K" }] },
-      });
-
-      // Safe access to nested content
-      const parts = response.candidates?.[0]?.content?.parts ?? [];
-      const imagePart = parts.find((p: any) => p.inlineData);
-      const imageUrl = imagePart ? `data:image/png;base64,${imagePart.inlineData.data}` : "";
-
-      return res.json({ imageUrl });
+      // Use 1.5 Flash for fast summaries
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `Summarize incident: ${req.body.type} at ${req.body.loc}. Desc: ${req.body.desc}. Max 20 words.`;
+      
+      const result = await model.generateContent(prompt);
+      return res.json({ text: result.response.text().trim() });
     }
 
     return res.status(400).json({ error: "Unknown action" });
   } catch (err: any) {
-    console.error("Neural API failure:", err);
-    return res.status(500).json({ error: "Neural Link Error", details: err.message });
+    console.error("Neural Error:", err);
+    return res.status(500).json({ error: err.message });
   }
 }
