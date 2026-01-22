@@ -1,32 +1,33 @@
+import { GoogleGenAI } from "@google/genai";
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { input, userRole, userDept } = req.body;
+  const apiKey = process.env.API_KEY; // Using your Google Key
+  if (!apiKey) return res.status(500).json({ error: "API_KEY missing" });
+
+  const { input } = req.body;
+  const genAI = new GoogleGenAI(apiKey);
 
   try {
-    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.DEEPSEEK_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: "You are an airport command AI." },
-          { role: "user", content: input }
-        ]
-      }),
+    // Use 1.5 Flash (very fast and cheap)
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      systemInstruction: "You are an airport command AI. Be concise and professional."
     });
 
-    const data = await response.json();
-    res.json(data);
+    const result = await model.generateContent(input);
+    const text = result.response.text();
 
-  } catch (err) {
+    // Returning format similar to what your frontend expects
+    res.json({ 
+      choices: [{ message: { content: text } }] 
+    });
+
+  } catch (err: any) {
     console.error(err);
-    res.status(500).json({ error: "AI failure" });
+    res.status(500).json({ error: "Gemini AI failure", details: err.message });
   }
 }
