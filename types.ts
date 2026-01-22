@@ -78,6 +78,17 @@ export interface ChatMessage {
   isRead: boolean;
 }
 
+export type UpdateType = 'INFORMATION' | 'UPDATE' | 'RESOLUTION';
+
+export interface LogUpdate {
+  id: string;
+  timestamp: Date;
+  authorName: string;
+  authorDept: Department;
+  type: UpdateType;
+  content: string;
+}
+
 export interface LogEntry {
   id: string;
   timestamp: Date;
@@ -90,6 +101,9 @@ export interface LogEntry {
   terminal: Terminal;
   aiAnalysis?: string;
   relatedAirline?: string; // For filtering alerts
+  requestedTeams?: string[]; // New: For manual report team tags
+  updates?: LogUpdate[]; // New: For incident resolution tracking
+  isResolved?: boolean;
 }
 
 export interface ResourceStatus {

@@ -42,12 +42,10 @@ const relayMessageTool: FunctionDeclaration = {
   }
 };
 
-// --- MAIN PROCESSOR ---
+// --- MAIN PROCESSORS ---
 
 export const processCommandInput = async (input: string, userRole: string, userDept: string) => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
-
-  // Upgraded to Pro for more reliable trilingual translation and tool calling
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const modelName = 'gemini-3-pro-preview';
 
   const systemInstruction = `
@@ -62,8 +60,6 @@ export const processCommandInput = async (input: string, userRole: string, userD
        - ORANGE (HIGH): Major Queues (>20m), Broken Equipment (PBB, Conveyor), Large Spill, Missing Staff.
        - BLUE (MEDIUM/LOW): General updates, routine checks, minor maintenance, shift reports.
     
-    If the user input is in Visayan like "Naay gubot sa gate 5", you translate to "Disorderly conduct reported at Gate 5" and call 'broadcastAlert' with intensityLevel='RED'.
-    
     User Context: ${userRole} working in ${userDept}.
   `;
 
@@ -74,24 +70,56 @@ export const processCommandInput = async (input: string, userRole: string, userD
       config: {
         systemInstruction,
         tools: [{ functionDeclarations: [broadcastAlertTool, relayMessageTool] }],
-        // Pro models benefit from a higher thinking budget for complex translation/classification
         thinkingConfig: { thinkingBudget: 2000 }
       }
     });
 
     const toolCalls = response.functionCalls || [];
     const text = response.text || "";
-
     return { text, toolCalls };
-
   } catch (error) {
     console.error("Gemini Engine Failure:", error);
     return { text: "Neural Link Error. Reverting to manual log.", toolCalls: [] };
   }
 };
 
+/**
+ * Generates an AI-parsed summary for manual reports to be displayed in the Neural Feed.
+ */
+export const generateNeuralSummary = async (type: string, loc: string, desc: string, teams: string[]) => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const modelName = 'gemini-3-flash-preview';
+
+  const prompt = `
+    Act as an airport dispatch AI. Convert the following manual incident report into a short, high-impact description for a neural feed.
+    
+    Incident Type: ${type}
+    Location: ${loc}
+    Description: ${desc}
+    
+    Rules:
+    - Maximum 20 words.
+    - Tone: Professional, aviation-focused, data-driven.
+    - Output ONLY the description of the event. 
+    - DO NOT include severity levels, classification labels, or requested teams in your output.
+    
+    Example output: "Unattended bag reported near Gate 5 seating area. Area cordoned off by local security team."
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: modelName,
+      contents: prompt,
+    });
+    return response.text.trim();
+  } catch (error) {
+    console.error("Summary Generation Error:", error);
+    return `${type} reported at ${loc}: ${desc}`;
+  }
+};
+
 export const generateUIConcept = async () => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = `Futuristic airport command center UI, dark mode, glowing red and indigo data streams, high-resolution dashboard, 4K render.`;
   try {
     const response = await ai.models.generateContent({
