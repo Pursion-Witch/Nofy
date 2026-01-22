@@ -53,7 +53,7 @@ export default async function handler(req: any, res: any) {
   try {
     if (action === "processCommand") {
       const response = await ai.models.generateContent({
-        model: "deepseek",
+        model: "gemini-1.5-pro",
         contents: input,
         config: {
           systemInstruction: `
@@ -80,7 +80,7 @@ User Context: ${userRole} working in ${userDept}
       const { type, loc, desc } = req.body;
 
       const response = await ai.models.generateContent({
-        model: "deepseek",
+        model: "gemini-1.5-flash",
         contents: `
 Incident Type: ${type}
 Location: ${loc}
@@ -97,7 +97,7 @@ Rules:
 
     if (action === "uiConcept") {
       const response = await ai.models.generateContent({
-        model: "deepseek",
+        model: "gemini-1.5-flash",
         contents: { parts: [{ text: "Futuristic airport command center UI, dark mode, 4K" }] },
       });
 
