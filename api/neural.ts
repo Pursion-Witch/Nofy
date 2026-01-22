@@ -1,4 +1,4 @@
-import type { IncomingMessage, ServerResponse } from "any";
+import type { IncomingMessage, ServerResponse } from "http";
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { IncidentSeverity, Department } from "../types";
 
