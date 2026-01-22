@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
-import { IncidentSeverity, Department } from "../types";
+import { IncidentSeverity, Department } from "../types.js";
 
 // --- TOOLS ---
 const broadcastAlertTool: FunctionDeclaration = {
@@ -53,7 +53,7 @@ export default async function handler(req: any, res: any) {
   try {
     if (action === "processCommand") {
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
+        model: "deepseek",
         contents: input,
         config: {
           systemInstruction: `
@@ -80,7 +80,7 @@ User Context: ${userRole} working in ${userDept}
       const { type, loc, desc } = req.body;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "deepseek",
         contents: `
 Incident Type: ${type}
 Location: ${loc}
@@ -97,7 +97,7 @@ Rules:
 
     if (action === "uiConcept") {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-image",
+        model: "deepseek",
         contents: { parts: [{ text: "Futuristic airport command center UI, dark mode, 4K" }] },
       });
 
