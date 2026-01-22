@@ -1,32 +1,39 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { IncidentSeverity, Department } from "../types.js";
 
 // --- TOOLS ---
-const broadcastAlertTool = {
+// Using Type.OBJECT and Type.STRING from the SDK to satisfy TypeScript
+const broadcastAlertTool: FunctionDeclaration = {
   name: "broadcastAlert",
   description: "REQUIRED for RED or ORANGE tier incidents. Use for anything dangerous, urgent, or high-impact.",
   parameters: {
-    type: "OBJECT",
+    type: Type.OBJECT,
     properties: {
-      severity: { type: "STRING", enum: Object.values(IncidentSeverity) },
-      translatedMessage: { type: "STRING" },
-      originalLanguage: { type: "STRING" },
-      intensityLevel: { type: "STRING", enum: ["RED", "ORANGE"] },
-      targetDepts: { type: "ARRAY", items: { type: "STRING", enum: Object.values(Department) } },
+      severity: { type: Type.STRING, enum: Object.values(IncidentSeverity) },
+      translatedMessage: { type: Type.STRING },
+      originalLanguage: { type: Type.STRING },
+      intensityLevel: { type: Type.STRING, enum: ["RED", "ORANGE"] },
+      targetDepts: { 
+        type: Type.ARRAY, 
+        items: { type: Type.STRING, enum: Object.values(Department) } 
+      },
     },
     required: ["severity", "translatedMessage", "intensityLevel", "targetDepts"],
   },
 };
 
-const relayMessageTool = {
+const relayMessageTool: FunctionDeclaration = {
   name: "relayMessage",
   description: "REQUIRED for BLUE tier incidents.",
   parameters: {
-    type: "OBJECT",
+    type: Type.OBJECT,
     properties: {
-      translatedMessage: { type: "STRING" },
-      intensityLevel: { type: "STRING", enum: ["BLUE"] },
-      targetDepts: { type: "ARRAY", items: { type: "STRING", enum: Object.values(Department) } },
+      translatedMessage: { type: Type.STRING },
+      intensityLevel: { type: Type.STRING, enum: ["BLUE"] },
+      targetDepts: { 
+        type: Type.ARRAY, 
+        items: { type: Type.STRING, enum: Object.values(Department) } 
+      },
     },
     required: ["translatedMessage", "intensityLevel", "targetDepts"],
   },
