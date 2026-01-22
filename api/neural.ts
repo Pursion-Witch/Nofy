@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
+import type { IncomingMessage, ServerResponse } from "any";
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { IncidentSeverity, Department } from "../types";
 
@@ -34,7 +34,7 @@ const relayMessageTool: FunctionDeclaration = {
 };
 
 // --- API HANDLER ---
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: any, res: any {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
