@@ -1,9 +1,7 @@
 export default async function handler(req: any, res: any) {
-  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
 
   const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "DEEPSEEK_API_KEY missing" });
-
   const { input } = req.body;
 
   try {
@@ -14,28 +12,21 @@ export default async function handler(req: any, res: any) {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "deepseek-reasoner",
+        model: "deepseek-chat", // Instant response
         messages: [
-          { role: "system", content: "You are an airport command AI. Provide concise, logical reasoning for your answers." },
+          { role: "system", content: "Concise Airport AI." },
           { role: "user", content: input }
-        ]
+        ],
+        max_tokens: 100 
       })
     });
 
     const data = await response.json();
-    
-    // DeepSeek-R1 returns the answer in 'content' 
-    // and the thinking process in 'reasoning_content'
     res.json({
-      choices: [{ 
-        message: { 
-          content: data.choices[0].message.content 
-        } 
-      }]
+      choices: [{ message: { content: data.choices[0].message.content } }]
     });
 
   } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: "DeepSeek failure", details: err.message });
+    res.status(500).json({ error: "AI Busy" });
   }
 }
