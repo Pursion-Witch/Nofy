@@ -6,7 +6,7 @@ import {
   Luggage, ClipboardList, Send, Info, Menu
 } from 'lucide-react';
 import { UserProfile, Flight, IncidentSeverity } from '../types';
-import { processCommandInput } from "../services/neuralClient";
+import { processCommandInput } from '../geminiEngine';
 
 interface AirlineOpsDashboardProps {
   user: UserProfile;

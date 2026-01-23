@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowRightLeft, 
@@ -160,10 +161,10 @@ export const StrategicOverview: React.FC<StrategicOverviewProps> = ({
 
       {/* KPI GRID */}
       <div id="dash-kpi-grid" className="grid grid-cols-2 md:grid-cols-4 gap-2 lg:gap-4 shrink-0">
-          <MetricCard title="Total Pax" value={totalPax.toLocaleString()} sub="24h Projection" icon={Users} color="indigo" trend="+8.5%" />
-          <MetricCard title="OTP Rate" value={`${otpRate}%`} sub="Target: 85%" icon={Clock} color="emerald" trend={otpRate < 85 ? '-2.1%' : '+1.2%'} />
+          <MetricCard title="Total Passengers" value={totalPax.toLocaleString()} sub="24h Projection" icon={Users} color="indigo" trend="+8.5%" />
+          <MetricCard title="On-Time Performance" value={`${otpRate}%`} sub="Target: 85%" icon={Clock} color="emerald" trend={otpRate < 85 ? '-2.1%' : '+1.2%'} />
           <MetricCard title="Incidents" value={criticalLogs.length} sub="Active Alerts" icon={AlertTriangle} color={criticalLogs.length > 0 ? "rose" : "slate"} onClick={() => setShowIncidentsModal(true)} />
-          <MetricCard title="Gate Eff." value="94%" sub="Turnaround Time" icon={DoorOpen} color="sky" />
+          <MetricCard title="Gate Efficiency" value="94%" sub="Turnaround Time" icon={DoorOpen} color="sky" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 lg:gap-4">

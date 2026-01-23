@@ -149,13 +149,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
   };
 
   const SmallLogo = () => (
-    <div className="flex items-center gap-2 mb-6 opacity-60">
-       <div className="flex items-end select-none">
-          <span className="text-xl font-black text-white tracking-wide">NOF</span>
-          <span className="text-2xl font-black text-indigo-400 leading-none">Y</span>
+    <div className="flex items-center gap-4 mb-6 opacity-80">
+       <div className="flex items-end select-none relative pt-2">
+          <span className="text-xl font-black text-white tracking-tight relative">
+            NOF
+            <RadioTower className="absolute -top-3 right-0 w-3.5 h-3.5 text-sky-400" />
+          </span>
+          <span className="text-2xl font-black text-indigo-400 relative ml-0.5 leading-none">
+            Y
+            <Plane className="absolute -top-2.5 -right-2 w-3.5 h-3.5 text-rose-500 transform rotate-12" />
+          </span>
        </div>
-       <div className="h-4 w-px bg-slate-600 mx-1"></div>
-       <span className="text-xs font-bold text-slate-400 uppercase">Profile Setup</span>
+       <div className="h-6 w-px bg-slate-700"></div>
+       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">System Profile</span>
     </div>
   );
 
@@ -286,7 +292,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
                             value={selectedAirline}
                             onChange={(e) => setSelectedAirline(e.target.value)}
                             required
-                            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
+                            className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none transition-all"
                         >
                             <option value="">-- Choose Airline --</option>
                             {AIRLINES.map(air => (
@@ -305,7 +311,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
                         onChange={(e) => setSelectedRole(e.target.value)}
                         required
                         autoFocus
-                        className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                     />
                   </div>
 
@@ -317,7 +323,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl p-4 text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -340,7 +346,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, initialEmail,
             <p className="text-xs text-slate-500 font-medium">Authorized Personnel Only • MCIA Operations</p>
             <div className="flex items-center gap-2 opacity-40">
                 <div className="h-px w-4 bg-slate-700"></div>
-                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Build v0.63 (Prototype)</p>
+                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Build v0.65 (Prototype)</p>
                 <div className="h-px w-4 bg-slate-700"></div>
             </div>
         </div>

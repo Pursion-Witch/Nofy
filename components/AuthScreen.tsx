@@ -49,14 +49,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
 
       <div className="w-full max-w-md z-10">
         
-        {/* Logo Section */}
+        {/* Logo Section - Restored to original design */}
         <div className="flex flex-col items-center mb-8">
-            <div className="flex items-end select-none mb-4">
-                <h1 className="text-5xl font-black text-white tracking-wide">NOF</h1>
-                <div className="relative mx-1">
-                    <h1 className="text-6xl font-black text-indigo-500 leading-[0.8]">Y</h1>
-                    <Plane className="absolute -top-4 -right-5 w-6 h-6 text-rose-500 fill-rose-900/40 transform -rotate-12" />
-                    <RadioTower className="absolute -top-4 -left-5 w-6 h-6 text-sky-400 fill-sky-900/40" />
+            <div className="flex items-center select-none mb-6 pt-6">
+                <div className="relative flex items-end">
+                    <span className="text-6xl font-black text-white tracking-tight relative">
+                        NOF
+                        <RadioTower className="absolute -top-7 right-1 w-10 h-10 text-sky-400 drop-shadow-lg" />
+                    </span>
+                    <span className="text-8xl font-black text-indigo-500 relative ml-1 leading-[0.8]">
+                        Y
+                        <Plane className="absolute -top-4 -right-8 w-10 h-10 text-rose-500 transform rotate-12 drop-shadow-lg" />
+                    </span>
                 </div>
             </div>
             <p className="text-slate-400 text-sm font-medium tracking-wide uppercase bg-slate-900/80 px-4 py-1.5 rounded-full border border-slate-800">
@@ -176,7 +180,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onAuthenticated }) => {
             <p className="text-xs text-slate-500 font-medium">Authorized Personnel Only • MCIA Operations</p>
             <div className="flex items-center gap-2 opacity-40">
                 <div className="h-px w-4 bg-slate-700"></div>
-                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Build v0.63 (Prototype)</p>
+                <p className="text-[10px] font-mono text-slate-400 uppercase tracking-widest">Build v0.65 (Prototype)</p>
                 <div className="h-px w-4 bg-slate-700"></div>
             </div>
         </div>

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Send, Loader2, PackageX, HeartPulse, CheckSquare, AlertTriangle, Users, Sparkles, Clipboard, ArrowLeft, Languages, Activity, MapPin, Building2, Shield, Wrench, Siren } from 'lucide-react';
 import { LogEntry, IncidentSeverity, Department, UserRole, Terminal } from '../types';
-import { processCommandInput } from "../services/neuralClient";
+import { processCommandInput, generateNeuralSummary } from '../geminiEngine';
 
 interface CommandInterfaceProps {
   role: UserRole;
@@ -14,10 +14,10 @@ interface CommandInterfaceProps {
 }
 
 const CATEGORIES = [
+  { id: 'GENERAL', label: 'General Report', icon: <Sparkles className="w-5 h-5" /> }, // AI Parser
   { id: 'SECURITY', label: 'Security / Safety', icon: <PackageX className="w-4 h-4" /> },
   { id: 'FACILITIES', label: 'Facilities / Ops', icon: <Users className="w-4 h-4" /> },
-  { id: 'MEDICAL', label: 'Medical Emergency', icon: <HeartPulse className="w-4 h-4" /> },
-  { id: 'AI_PARSER', label: 'AI Log Parser', icon: <Sparkles className="w-4 h-4" /> }
+  { id: 'MEDICAL', label: 'Medical Emergency', icon: <HeartPulse className="w-4 h-4" /> }
 ];
 
 const LOCATION_OPTIONS = [
@@ -31,7 +31,8 @@ const TEAMS_BY_CAT = {
 };
 
 export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, department, userName, currentTerminal, onNewLog, onBack }) => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  // Default to General (AI Parser)
+  const [selectedCategory, setSelectedCategory] = useState<string>('GENERAL');
   const [rawLogText, setRawLogText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   
@@ -107,7 +108,7 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
       }
     } catch (e) {
       console.error("AI Error:", e);
-      alert("AI Neural Link timed out or failed to parse.");
+      alert("AI Neural Link timed out.");
     } finally {
       setIsProcessing(false);
     }
@@ -137,11 +138,9 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
     setIsProcessing(true);
 
     try {
-      // Use AI to generate a clean description for the feed (no meta-data)
       const summary = await generateNeuralSummary(incidentType, location, description, selectedTeams);
 
       let severity = IncidentSeverity.MEDIUM;
-      // Heuristic to decide the Tier (Badge Color)
       const textLower = (incidentType + description).toLowerCase();
       if (selectedCategory === 'MEDICAL' || textLower.includes('fire') || textLower.includes('emergency') || textLower.includes('breach')) {
           severity = IncidentSeverity.CRITICAL;
@@ -158,7 +157,7 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
         originDept: department,
         targetDept: [Department.AOCC],
         agenciesInvolved: [],
-        requestedTeams: selectedTeams, // Pass teams for tag rendering
+        requestedTeams: selectedTeams,
         terminal: location === 'Terminal 1' ? Terminal.T1 : location === 'Terminal 2' ? Terminal.T2 : currentTerminal,
       };
 
@@ -167,7 +166,6 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
     } catch (e) {
         console.error("Manual Report AI Error:", e);
         alert("Dispatcher link failure. Using manual draft.");
-        // Fallback log creation
     } finally {
         setIsProcessing(false);
     }
@@ -274,29 +272,25 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
       </div>
 
       <div className="flex-grow p-4 overflow-y-auto custom-scrollbar pb-10">
-        <div className="mb-6">
-           <label className="block text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-widest">Entry Mode</label>
-           <div id="cmd-category-grid" className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => { setSelectedCategory(cat.id); setAiPreview(null); }}
-                  className={`p-3 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
-                    selectedCategory === cat.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-slate-700/50 border-slate-600 text-slate-400 hover:bg-slate-700'
-                  }`}
-                >
-                   {cat.icon}
-                   <span className="text-[10px] font-black uppercase">{cat.label.split(' / ')[0]}</span>
-                </button>
-              ))}
+        
+        {/* NEW LAYOUT: General Report (AI) at the top */}
+        <div className="space-y-6">
+           <div className="group">
+              <button
+                onClick={() => { setSelectedCategory('GENERAL'); setAiPreview(null); }}
+                className={`w-full p-6 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all ${
+                  selectedCategory === 'GENERAL' ? 'bg-indigo-600 border-indigo-500 text-white shadow-2xl' : 'bg-slate-700/50 border-slate-600 text-slate-400 hover:bg-slate-700'
+                }`}
+              >
+                 <Sparkles className={`w-8 h-8 ${selectedCategory === 'GENERAL' ? 'text-white' : 'text-indigo-400'}`} />
+                 <div className="text-center">
+                    <span className="text-lg font-black uppercase tracking-tight block">General Report</span>
+                    <span className="text-[10px] opacity-70 font-bold uppercase tracking-widest">AI-Powered Neural Relay</span>
+                 </div>
+              </button>
            </div>
-        </div>
 
-        {selectedCategory === 'SECURITY' && renderManualForm('SECURITY')}
-        {selectedCategory === 'FACILITIES' && renderManualForm('FACILITIES')}
-        {selectedCategory === 'MEDICAL' && renderManualForm('MEDICAL')}
-
-        {selectedCategory === 'AI_PARSER' && (
+           {selectedCategory === 'GENERAL' && (
              <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
                 <div className="bg-indigo-900/10 border border-indigo-500/20 rounded-xl p-4">
                    <div className="flex items-center gap-2 text-indigo-300 font-bold text-xs mb-1">
@@ -361,14 +355,10 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
                               }`}>{aiPreview.tier} TIER</div>
                            </div>
                         </div>
-                        <div className="text-right hidden sm:block">
-                           <div className="text-[10px] font-bold text-slate-500 uppercase">Routing To</div>
-                           <div className="text-xs font-bold text-indigo-300">{aiPreview.depts.join(' + ')}</div>
-                        </div>
                      </div>
 
                      <div className="flex gap-2">
-                        <button onClick={() => setAiPreview(null)} className="flex-1 py-3 bg-slate-700 text-white font-bold rounded-xl text-sm">RE-SCAN</button>
+                        <button onClick={() => setAiPreview(null)} className="flex-1 py-3 bg-slate-700 text-white font-bold rounded-xl text-sm transition-colors">RE-SCAN</button>
                         <button onClick={finalizeLog} className={`flex-[2] py-3 text-white font-black rounded-xl text-sm flex items-center justify-center gap-2 shadow-xl ${
                            aiPreview.tier === 'RED' ? 'bg-red-600 hover:bg-red-500' : 
                            aiPreview.tier === 'ORANGE' ? 'bg-orange-600 hover:bg-orange-500' : 
@@ -380,7 +370,32 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
                   </div>
                 )}
              </div>
-        )}
+           )}
+
+           <div className="h-px bg-slate-700/50 w-full my-4"></div>
+
+           <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-widest">Specific Incident Categories</label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                 {CATEGORIES.filter(c => c.id !== 'GENERAL').map(cat => (
+                   <button
+                     key={cat.id}
+                     onClick={() => { setSelectedCategory(cat.id); setAiPreview(null); }}
+                     className={`p-4 rounded-xl border flex flex-col items-center justify-center gap-1 transition-all ${
+                       selectedCategory === cat.id ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-slate-700/50 border-slate-600 text-slate-400 hover:bg-slate-700'
+                     }`}
+                   >
+                      {cat.icon}
+                      <span className="text-[10px] font-black uppercase text-center leading-tight mt-1">{cat.label.split(' / ')[0]}</span>
+                   </button>
+                 ))}
+              </div>
+           </div>
+
+           {selectedCategory === 'SECURITY' && renderManualForm('SECURITY')}
+           {selectedCategory === 'FACILITIES' && renderManualForm('FACILITIES')}
+           {selectedCategory === 'MEDICAL' && renderManualForm('MEDICAL')}
+        </div>
       </div>
     </div>
   );
