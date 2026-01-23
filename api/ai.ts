@@ -12,12 +12,12 @@ export default async function handler(req: any, res: any) {
         "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "deepseek-chat", // Instant response
+        model: "deepseek-chat",
         messages: [
-          { role: "system", content: "Concise Airport AI." },
+          { role: "system", content: "You are an MCIA Airport Assistant. Be extremely concise." },
           { role: "user", content: input }
         ],
-        max_tokens: 100 
+        max_tokens: 150
       })
     });
 
@@ -25,8 +25,7 @@ export default async function handler(req: any, res: any) {
     res.json({
       choices: [{ message: { content: data.choices[0].message.content } }]
     });
-
   } catch (err: any) {
-    res.status(500).json({ error: "AI Busy" });
+    res.status(500).json({ error: "AI failure" });
   }
 }
