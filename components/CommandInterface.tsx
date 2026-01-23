@@ -134,42 +134,47 @@ export const CommandInterface: React.FC<CommandInterfaceProps> = ({ role, depart
   };
 
   const submitManualForm = async () => {
-    if (!incidentType || !description) return;
-    setIsProcessing(true);
+  if (!incidentType || !description) return;
+  setIsProcessing(true);
 
-    try {
-      const summary = await generateNeuralSummary(incidentType, location, description, selectedTeams);
+  try {
+    // Construct a professional summary from the form fields
+    const manualSummary = `[${incidentType.toUpperCase()}] at ${location}. ${description}${
+      selectedTeams.length > 0 ? ` \nRequested Teams: ${selectedTeams.join(', ')}` : ''
+    }`;
 
-      let severity = IncidentSeverity.MEDIUM;
-      const textLower = (incidentType + description).toLowerCase();
-      if (selectedCategory === 'MEDICAL' || textLower.includes('fire') || textLower.includes('emergency') || textLower.includes('breach')) {
-          severity = IncidentSeverity.CRITICAL;
-      } else if (textLower.includes('high') || textLower.includes('broken') || textLower.includes('queue')) {
-          severity = IncidentSeverity.HIGH;
-      }
-
-      const newLog: LogEntry = {
-        id: Date.now().toString(),
-        timestamp: new Date(),
-        message: summary,
-        category: selectedCategory === 'SECURITY' ? 'INCIDENT' : selectedCategory === 'MEDICAL' ? 'PASSENGER' : 'OPERATIONAL',
-        severity,
-        originDept: department,
-        targetDept: [Department.AOCC],
-        agenciesInvolved: [],
-        requestedTeams: selectedTeams,
-        terminal: location === 'Terminal 1' ? Terminal.T1 : location === 'Terminal 2' ? Terminal.T2 : currentTerminal,
-      };
-
-      onNewLog(newLog);
-      onBack();
-    } catch (e) {
-        console.error("Manual Report AI Error:", e);
-        alert("Dispatcher link failure. Using manual draft.");
-    } finally {
-        setIsProcessing(false);
+    // Determine Severity
+    let severity = IncidentSeverity.MEDIUM;
+    const textLower = (incidentType + description).toLowerCase();
+    
+    if (selectedCategory === 'MEDICAL' || textLower.includes('fire') || textLower.includes('emergency') || textLower.includes('breach')) {
+        severity = IncidentSeverity.CRITICAL;
+    } else if (textLower.includes('high') || textLower.includes('broken') || textLower.includes('queue')) {
+        severity = IncidentSeverity.HIGH;
     }
-  };
+
+    const newLog: LogEntry = {
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      message: manualSummary, 
+      category: selectedCategory === 'SECURITY' ? 'INCIDENT' : selectedCategory === 'MEDICAL' ? 'PASSENGER' : 'OPERATIONAL',
+      severity,
+      originDept: department,
+      targetDept: [Department.AOCC],
+      agenciesInvolved: [],
+      requestedTeams: selectedTeams,
+      terminal: location === 'Terminal 1' ? Terminal.T1 : location === 'Terminal 2' ? Terminal.T2 : currentTerminal,
+    };
+
+    onNewLog(newLog);
+    onBack();
+  } catch (e) {
+      console.error("Manual Report Error:", e);
+      alert("Failed to submit report. Please check connection.");
+  } finally {
+      setIsProcessing(false);
+  }
+};
 
   const renderManualForm = (type: 'SECURITY' | 'FACILITIES' | 'MEDICAL') => {
     const teams = TEAMS_BY_CAT[type];
