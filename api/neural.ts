@@ -1,82 +1,75 @@
-import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { IncidentSeverity, Department } from "../types.js";
-
-const broadcastAlertTool: FunctionDeclaration = {
-  name: "broadcastAlert",
-  description: "REQUIRED for RED or ORANGE tier incidents. Use for anything dangerous, urgent, or high-impact.",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      severity: { type: Type.STRING, enum: Object.values(IncidentSeverity) },
-      translatedMessage: { type: Type.STRING },
-      originalLanguage: { type: Type.STRING },
-      intensityLevel: { type: Type.STRING, enum: ["RED", "ORANGE"] },
-      targetDepts: { 
-        type: Type.ARRAY, 
-        items: { type: Type.STRING, enum: Object.values(Department) } 
-      },
-    },
-    required: ["severity", "translatedMessage", "intensityLevel", "targetDepts"],
-  },
-};
-
-const relayMessageTool: FunctionDeclaration = {
-  name: "relayMessage",
-  description: "REQUIRED for BLUE tier incidents.",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      translatedMessage: { type: Type.STRING },
-      intensityLevel: { type: Type.STRING, enum: ["BLUE"] },
-      targetDepts: { 
-        type: Type.ARRAY, 
-        items: { type: Type.STRING, enum: Object.values(Department) } 
-      },
-    },
-    required: ["translatedMessage", "intensityLevel", "targetDepts"],
-  },
-};
 
 export default async function handler(req: any, res: any) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) return res.status(500).json({ error: "API_KEY missing" });
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: "DEEPSEEK_API_KEY missing" });
 
   const { input, userRole, userDept, action } = req.body;
-  // Initialize SDK
-  const ai = new GoogleGenAI({ apiKey });
 
   try {
+    let systemPrompt = "";
+    let body: any = {};
+
     if (action === "processCommand") {
-      // Using gemini-2.0-flash which is the standard for v1beta requests
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: [{ role: "user", parts: [{ text: input }] }],
-        config: {
-          systemInstruction: `You are the "NOFY Neural Relay" for Mactan-Cebu International Airport. User Context: ${userRole} in ${userDept}. Translate Cebuano/Tagalog to aviation English.`,
-          tools: [{ functionDeclarations: [broadcastAlertTool, relayMessageTool] }]
-        },
-      });
+      systemPrompt = `You are the "NOFY Neural Relay" for Mactan-Cebu International Airport. 
+      User: ${userRole} in ${userDept}. 
+      Task: Translate input to aviation English.
+      If the incident is RED/ORANGE (urgent/dangerous), you must respond in JSON format for a "broadcastAlert".
+      If the incident is BLUE (standard), respond in JSON for a "relayMessage".
+      
+      JSON Structure:
+      {
+        "tool": "broadcastAlert" | "relayMessage",
+        "parameters": { ... }
+      }`;
 
+      body = {
+        model: "deepseek-reasoner",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: input }
+        ],
+        response_format: { type: "json_object" }
+      };
+    } else if (action === "summary") {
+      body = {
+        model: "deepseek-reasoner",
+        messages: [
+          { role: "system", content: "Summarize the incident in max 20 words. Professional aviation tone." },
+          { role: "user", content: `Type: ${req.body.type}, Location: ${req.body.loc}, Desc: ${req.body.desc}` }
+        ]
+      };
+    }
+
+    const response = await fetch("https://api.deepseek.com/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const data = await response.json();
+    const content = data.choices[0].message.content;
+
+    if (action === "processCommand") {
+      const parsed = JSON.parse(content);
       return res.json({
-        text: response.text || "",
-        toolCalls: response.functionCalls || [],
+        text: "", // R1's reasoning is hidden in the 'reasoning_content' field usually
+        toolCalls: [{
+          name: parsed.tool,
+          args: parsed.parameters
+        }]
       });
     }
 
-    if (action === "summary") {
-      const { type, loc, desc } = req.body;
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: `Incident Type: ${type}\nLocation: ${loc}\nDescription: ${desc}\n\nRules: Max 20 words, Professional aviation tone.`,
-      });
-      return res.json({ text: response.text?.trim() ?? "" });
-    }
+    return res.json({ text: content });
 
-    return res.status(400).json({ error: "Unknown action" });
   } catch (err: any) {
-    console.error("Neural API failure:", err);
-    return res.status(500).json({ error: "Neural Link Error", details: err.message });
+    console.error("DeepSeek Error:", err);
+    return res.status(500).json({ error: "DeepSeek Link Error", details: err.message });
   }
 }
