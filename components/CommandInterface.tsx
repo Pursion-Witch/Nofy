@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Send, Loader2, PackageX, HeartPulse, CheckSquare, AlertTriangle, Users, Sparkles, Clipboard, ArrowLeft, Languages, Activity, MapPin, Building2, Shield, Wrench, Siren } from 'lucide-react';
 import { LogEntry, IncidentSeverity, Department, UserRole, Terminal } from '../types';
-import { processCommandInput, generateNeuralSummary } from '../geminiEngine';
+import { processCommandInput } from "../services/neuralClient";
 
 interface CommandInterfaceProps {
   role: UserRole;
