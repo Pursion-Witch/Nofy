@@ -1,5 +1,5 @@
 {
-  "name": "Copy of NOFY Operations 2.0",
-  "description": "NOFY: The centralized command system for Airport Operations.",
+  "name": "NOFY Operations - CEB-i Demo Build",
+  "description": "NOFY: The centralized command system for Airport Operations. Demo build to be used on CEB-i Demo Day.",
   "requestFramePermissions": []
 }

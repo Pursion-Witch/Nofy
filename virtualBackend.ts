@@ -222,7 +222,10 @@ class BackendService {
         { flightNumber: 'PR 1845', airline: 'Philippine Airlines', type: 'DEPARTURE', origin: 'CEB', destination: 'Manila (MNL)', status: 'ON TIME', gate: '4', paxCount: 178, capacity: 180, scheduledTime: '09:30', estimatedTime: '09:30', terminal: Terminal.T1, ssr: { wchr: 2, meda: 0, umnr: 1, vip: 0 } },
         { flightNumber: '5J 556', airline: 'Cebu Pacific', type: 'DEPARTURE', origin: 'CEB', destination: 'Dubai (DXB)', status: 'DELAYED', reasonCode: 'Late Inbound Aircraft', gate: '6', paxCount: 420, capacity: 430, scheduledTime: '14:00', estimatedTime: '15:30', assignedIsland: 'A', bagDrop: 'A1-A6', terminal: Terminal.T2, ssr: { wchr: 5, meda: 1, umnr: 0, vip: 2 } },
       ],
-      logs: [],
+      logs: [
+        { id: 'initial-critical-1', timestamp: new Date(), message: 'FIRE ALARM ACTIVATED: Terminal 2, Zone B Concourse. Automated evacuation standby.', category: 'INCIDENT', severity: IncidentSeverity.CRITICAL, originDept: Department.SECURITY, targetDept: [Department.AOCC, Department.SAFETY_QUALITY], agenciesInvolved: [], terminal: Terminal.T2, isResolved: false },
+        { id: 'initial-critical-2', timestamp: new Date(Date.now() - 1000 * 60 * 5), message: 'SECURITY BREACH: Unauthorized access at Gate 5 perimeter. Response team dispatched.', category: 'INCIDENT', severity: IncidentSeverity.URGENT, originDept: Department.SECURITY, targetDept: [Department.AOCC], agenciesInvolved: [], terminal: Terminal.T1, isResolved: false }
+      ],
       tasks: [
         { id: 't1', title: '08:00 Queue Check', description: 'Monitor check-in density.', dueTime: '08:00', status: 'COMPLETED', type: 'QUEUE_CHECK' },
         { id: 't2', title: '08:30 Hazard Patrol', description: 'Confirm Zone B clear.', dueTime: '08:30', status: 'PENDING', type: 'HAZARD_CHECK' }
